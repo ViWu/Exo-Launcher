@@ -2,7 +2,10 @@ package myapplication.applauncher;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
@@ -35,6 +38,16 @@ public class MainActivity extends Activity {
         drawerGrid.setAdapter(drawerAdapterObject);
 
         setDrawerListeners();
+        setReceiver();
+    }
+
+    public void setReceiver(){
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_PACKAGE_ADDED);
+        filter.addAction(Intent.ACTION_PACKAGE_REMOVED);
+        filter.addAction(Intent.ACTION_PACKAGE_CHANGED);
+        filter.addDataScheme("package");
+        registerReceiver(new Receiver(), filter);
     }
 
     public void getPackages() {
@@ -82,5 +95,16 @@ public class MainActivity extends Activity {
         });
     }
 
+    public class Receiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            getPackages();
+            drawerAdapterObject = new DrawerAdapter(MainActivity.this, apps);
+            drawerGrid.setAdapter(drawerAdapterObject);
+            setDrawerListeners();
+        }
+
+    }
 
 }
