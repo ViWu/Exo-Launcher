@@ -41,11 +41,11 @@ public class MainActivity extends Activity {
         final Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
         mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
         List<ResolveInfo> packages = pm.queryIntentActivities(mainIntent, 0);
-        for (int I = 0; I < packages.size(); I++) {
+        for (int i = 0; i < packages.size(); i++) {
             Application p = new Application();
-            p.icon = packages.get(I).loadIcon(pm);
-            p.name = packages.get(I).activityInfo.packageName;
-            p.label = packages.get(I).loadLabel(pm).toString();
+            p.icon = packages.get(i).loadIcon(pm);
+            p.name = packages.get(i).activityInfo.packageName;
+            p.label = packages.get(i).loadLabel(pm).toString();
             apps.add(p);
         }
     }
