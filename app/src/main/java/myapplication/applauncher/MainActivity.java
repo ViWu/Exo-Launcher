@@ -9,9 +9,15 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.SlidingDrawer;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,9 +26,12 @@ public class MainActivity extends Activity {
 
     DrawerAdapter drawerAdapterObject;
     GridView drawerGrid;
+    SlidingDrawer slidingDrawer;
+    RelativeLayout homeView;
 
     PackageManager pm;
     protected static ArrayList<Application> apps;
+    static boolean appLaunchable = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +41,8 @@ public class MainActivity extends Activity {
         apps = new ArrayList<>();
 
         drawerGrid = (GridView) findViewById(R.id.content);
+        slidingDrawer = (SlidingDrawer) findViewById(R.id.drawer);
+        homeView = (RelativeLayout) findViewById(R.id.home_view);
         pm = getPackageManager();
         getPackages();
         drawerAdapterObject = new DrawerAdapter(this, apps);
@@ -64,9 +75,32 @@ public class MainActivity extends Activity {
     }
 
 
+
     private void setDrawerListeners(){
         //Active dragging mode when long click at each Grid view item
+        drawerGrid.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView parent, View item, int position, long id) {
+                MainActivity.appLaunchable=false;
+                RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(item.getWidth(),item.getHeight());
+                lp.leftMargin = (int) item.getX();
+                lp.topMargin = (int) item.getY();
 
+                LayoutInflater li = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                LinearLayout ll = (LinearLayout) li.inflate(R.layout.drawer_item, null);
+
+                ImageView img = ((ImageView)item.findViewById(R.id.icon_image));
+                TextView txt = ((TextView)item.findViewById(R.id.icon_text));
+
+                ((ImageView)ll.findViewById(R.id.icon_image)).setImageDrawable(img.getDrawable());
+                ((TextView)ll.findViewById(R.id.icon_text)).setText(txt.getText());
+
+                homeView.addView(ll, lp);
+                slidingDrawer.animateClose();
+                slidingDrawer.bringToFront();
+                return true;
+            }
+        });
         //Handling click event of each Grid view item
          drawerGrid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
