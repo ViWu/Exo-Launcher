@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
@@ -74,8 +75,6 @@ public class MainActivity extends Activity {
         }
     }
 
-
-
     private void setDrawerListeners(){
         //Active dragging mode when long click at each Grid view item
         drawerGrid.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
@@ -94,6 +93,20 @@ public class MainActivity extends Activity {
 
                 ((ImageView)ll.findViewById(R.id.icon_image)).setImageDrawable(img.getDrawable());
                 ((TextView)ll.findViewById(R.id.icon_text)).setText(txt.getText());
+
+                ll.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        switch (event.getAction()){
+                            case MotionEvent.ACTION_MOVE:
+                                RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(),v.getWidth());
+                                lp.leftMargin = (int) event.getRawX()-v.getWidth()/2;
+                                lp.topMargin = (int) event.getRawY()-v.getWidth()/2;
+                                v.setLayoutParams(lp);
+                        }
+                        return true;
+                    }
+                });
 
                 homeView.addView(ll, lp);
                 slidingDrawer.animateClose();
