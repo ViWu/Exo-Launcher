@@ -21,6 +21,7 @@ import android.widget.SlidingDrawer;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 public class MainActivity extends Activity {
@@ -32,6 +33,9 @@ public class MainActivity extends Activity {
 
     protected static ArrayList<Application> apps;
     static boolean appLaunchable = true;
+    private static final int MAX_CLICK_DURATION = 250;
+    private long startClickTime;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,21 +81,38 @@ public class MainActivity extends Activity {
     }
 
     private void setHomeListeners(LinearLayout ll, int position){
+
         ll.setTag(apps.get(position).name);
 
         ll.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 switch (event.getAction()){
+                    //Start timer when view is touched
                     case MotionEvent.ACTION_MOVE:
+                        startClickTime = Calendar.getInstance().getTimeInMillis();
                         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(),v.getWidth());
                         lp.leftMargin = (int) event.getRawX()-v.getWidth()/2;
                         lp.topMargin = (int) event.getRawY()-v.getWidth()/2;
                         v.setLayoutParams(lp);
+                        break;
+
+                    case MotionEvent.ACTION_DOWN:
+                        startClickTime = Calendar.getInstance().getTimeInMillis();
+                        break;
+
+                    case MotionEvent.ACTION_UP:
+                        long clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
+                        if(clickDuration > MAX_CLICK_DURATION) {
+                            //no click event
+                            return true;
+                        }
+                        break;
                 }
                 return false;
             }
         });
+
 
         ll.setOnClickListener(new View.OnClickListener() {
             @Override
