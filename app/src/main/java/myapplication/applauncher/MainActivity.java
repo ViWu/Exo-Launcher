@@ -30,7 +30,6 @@ public class MainActivity extends Activity {
     SlidingDrawer slidingDrawer;
     RelativeLayout homeView;
 
-    PackageManager pm;
     protected static ArrayList<Application> apps;
     static boolean appLaunchable = true;
 
@@ -44,7 +43,7 @@ public class MainActivity extends Activity {
         drawerGrid = (GridView) findViewById(R.id.content);
         slidingDrawer = (SlidingDrawer) findViewById(R.id.drawer);
         homeView = (RelativeLayout) findViewById(R.id.home_view);
-        pm = getPackageManager();
+
         getPackages();
         drawerAdapterObject = new DrawerAdapter(this, apps);
         drawerGrid.setAdapter(drawerAdapterObject);
@@ -65,7 +64,9 @@ public class MainActivity extends Activity {
     public void getPackages() {
         final Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
         mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+        PackageManager pm = getPackageManager();
         List<ResolveInfo> packages = pm.queryIntentActivities(mainIntent, 0);
+
         for (int i = 0; i < packages.size(); i++) {
             Application p = new Application();
             p.icon = packages.get(i).loadIcon(pm);
@@ -74,6 +75,39 @@ public class MainActivity extends Activity {
             apps.add(p);
         }
     }
+
+    private void setHomeListeners(LinearLayout ll, int position){
+        ll.setTag(apps.get(position).name);
+
+        ll.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()){
+                    case MotionEvent.ACTION_MOVE:
+                        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(),v.getWidth());
+                        lp.leftMargin = (int) event.getRawX()-v.getWidth()/2;
+                        lp.topMargin = (int) event.getRawY()-v.getWidth()/2;
+                        v.setLayoutParams(lp);
+                }
+                return false;
+            }
+        });
+
+        ll.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                PackageManager manager = getPackageManager();
+
+                Intent i = manager.getLaunchIntentForPackage(v.getTag().toString());
+
+                if (i != null) {
+                    i.addCategory(Intent.CATEGORY_LAUNCHER);
+                    startActivity(i);
+                }
+            }
+        });
+    }
+
 
     private void setDrawerListeners(){
         //Active dragging mode when long click at each Grid view item
@@ -94,19 +128,7 @@ public class MainActivity extends Activity {
                 ((ImageView)ll.findViewById(R.id.icon_image)).setImageDrawable(img.getDrawable());
                 ((TextView)ll.findViewById(R.id.icon_text)).setText(txt.getText());
 
-                ll.setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        switch (event.getAction()){
-                            case MotionEvent.ACTION_MOVE:
-                                RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(),v.getWidth());
-                                lp.leftMargin = (int) event.getRawX()-v.getWidth()/2;
-                                lp.topMargin = (int) event.getRawY()-v.getWidth()/2;
-                                v.setLayoutParams(lp);
-                        }
-                        return true;
-                    }
-                });
+                setHomeListeners(ll, position);
 
                 homeView.addView(ll, lp);
                 slidingDrawer.animateClose();
