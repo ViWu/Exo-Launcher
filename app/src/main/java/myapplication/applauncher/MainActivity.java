@@ -33,8 +33,9 @@ public class MainActivity extends Activity {
 
     protected static ArrayList<Application> apps;
     static boolean appLaunchable = true;
-    private static final int MAX_CLICK_DURATION = 250;
+    private static final int MAX_CLICK_DURATION = 25;
     private long startClickTime;
+    private int posX, posY;
 
 
     @Override
@@ -90,7 +91,6 @@ public class MainActivity extends Activity {
                 switch (event.getAction()){
                     //Start timer when view is touched
                     case MotionEvent.ACTION_MOVE:
-                        startClickTime = Calendar.getInstance().getTimeInMillis();
                         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(),v.getWidth());
                         lp.leftMargin = (int) event.getRawX()-v.getWidth()/2;
                         lp.topMargin = (int) event.getRawY()-v.getWidth()/2;
