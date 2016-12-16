@@ -9,6 +9,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -33,9 +34,10 @@ public class MainActivity extends Activity {
 
     protected static ArrayList<Application> apps;
     static boolean appLaunchable = true;
-    private static final int MAX_CLICK_DURATION = 25;
-    private long startClickTime;
-    private int posX, posY;
+    private static final int MAX_CLICK_DURATION = 100;
+    private static final int MIN_LONG_CLICK_DURATION = 1000;
+    private long startClickTime, clickDuration;
+    public static Vibrator vibration;
 
 
     @Override
@@ -52,6 +54,7 @@ public class MainActivity extends Activity {
         getPackages();
         drawerAdapterObject = new DrawerAdapter(this, apps);
         drawerGrid.setAdapter(drawerAdapterObject);
+        vibration = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
         setDrawerListeners();
         setReceiver();
@@ -89,12 +92,19 @@ public class MainActivity extends Activity {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 switch (event.getAction()){
+
                     //Start timer when view is touched
                     case MotionEvent.ACTION_MOVE:
-                        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(),v.getWidth());
-                        lp.leftMargin = (int) event.getRawX()-v.getWidth()/2;
-                        lp.topMargin = (int) event.getRawY()-v.getWidth()/2;
-                        v.setLayoutParams(lp);
+                        clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
+                        //vibration = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                        if(clickDuration >= MIN_LONG_CLICK_DURATION) {
+                            if(clickDuration < MIN_LONG_CLICK_DURATION+150)
+                                vibration.vibrate(250);
+                            RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(), v.getWidth());
+                            lp.leftMargin = (int) event.getRawX() - v.getWidth() / 2;
+                            lp.topMargin = (int) event.getRawY() - v.getWidth() / 2;
+                            v.setLayoutParams(lp);
+                        }
                         break;
 
                     case MotionEvent.ACTION_DOWN:
@@ -102,12 +112,13 @@ public class MainActivity extends Activity {
                         break;
 
                     case MotionEvent.ACTION_UP:
-                        long clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
+                        clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
                         if(clickDuration > MAX_CLICK_DURATION) {
                             //no click event
                             return true;
                         }
                         break;
+
                 }
                 return false;
             }
@@ -139,6 +150,8 @@ public class MainActivity extends Activity {
                 RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(item.getWidth(),item.getHeight());
                 lp.leftMargin = (int) item.getX();
                 lp.topMargin = (int) item.getY();
+
+                vibration.vibrate(200);
 
                 LayoutInflater li = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 LinearLayout ll = (LinearLayout) li.inflate(R.layout.drawer_item, null);
