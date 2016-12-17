@@ -75,12 +75,15 @@ public class MainActivity extends Activity {
         PackageManager pm = getPackageManager();
         List<ResolveInfo> packages = pm.queryIntentActivities(mainIntent, 0);
 
+        String PACKAGE_NAME = getApplicationContext().getPackageName();
+
         for (int i = 0; i < packages.size(); i++) {
             Application p = new Application();
             p.icon = packages.get(i).loadIcon(pm);
             p.name = packages.get(i).activityInfo.packageName;
             p.label = packages.get(i).loadLabel(pm).toString();
-            apps.add(p);
+            if(!(p.name.equals(PACKAGE_NAME)))
+                apps.add(p);
         }
     }
 
