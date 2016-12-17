@@ -66,6 +66,15 @@ public class MainActivity extends Activity {
         setReceiver();
     }
 
+    @Override
+    public void onBackPressed() {
+        if (slidingDrawer.isOpened()) {
+            slidingDrawer.animateClose();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
     public void setReceiver(){
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_PACKAGE_ADDED);
