@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.support.design.widget.Snackbar;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -20,6 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -38,6 +40,7 @@ public class MainActivity extends Activity {
     private static final int MIN_LONG_CLICK_DURATION = 1000;
     private long startClickTime, clickDuration;
     public static Vibrator vibration;
+    ImageView remove;
 
 
     @Override
@@ -55,6 +58,9 @@ public class MainActivity extends Activity {
         drawerAdapterObject = new DrawerAdapter(this, apps);
         drawerGrid.setAdapter(drawerAdapterObject);
         vibration = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
+        remove = (ImageView) findViewById(R.id.delete);
+        remove.setVisibility(View.GONE);
 
         setDrawerListeners();
         setReceiver();
@@ -87,35 +93,78 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void setHomeListeners(LinearLayout ll, int position){
+    public RelativeLayout.LayoutParams createLayoutParams(View v, int x, int y){
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(), v.getWidth());
+        lp.leftMargin = x;
+        lp.topMargin = y;
+        return lp;
+    }
+
+    public void deleteShortcut(LinearLayout ll, int x, int y, boolean released){
+
+        float xLowerBound = remove.getX() - remove.getWidth() / 2 - 150;
+        float xUpperBound = remove.getX() - remove.getWidth() / 2 + 150;
+        float yLowerBound = remove.getY() - remove.getWidth() / 2 - 150;
+        float yUpperBound = remove.getY() - remove.getWidth() / 2 + 150;
+        android.view.ViewGroup.LayoutParams layoutParams = remove.getLayoutParams();
+
+        //if app collides with delete icon
+        if((x > xLowerBound && x < xUpperBound) && (y > yLowerBound && y < yUpperBound )){
+            if(released)
+                ll.removeAllViews();
+            //if hovered but not released
+            else{
+                layoutParams.width = 250;
+                layoutParams.height = 250;
+                remove.setLayoutParams(layoutParams);
+            }
+        }
+        //no collision
+        else{
+            layoutParams.width = 150;
+            layoutParams.height = 150;
+        }
+    }
+
+    private void setHomeListeners(final LinearLayout ll, final int position){
 
         ll.setTag(apps.get(position).name);
 
         ll.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
+
+                int x = (int) event.getRawX() - v.getWidth() / 2;
+                int y = (int) event.getRawY() - v.getWidth() / 2;
+                RelativeLayout.LayoutParams lp = createLayoutParams(v, x, y);
+
                 switch (event.getAction()){
 
-                    //Start timer when view is touched
                     case MotionEvent.ACTION_MOVE:
                         clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
-                        //vibration = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                         if(clickDuration >= MIN_LONG_CLICK_DURATION) {
-                            if(clickDuration < MIN_LONG_CLICK_DURATION+150)
+
+                            if(clickDuration < MIN_LONG_CLICK_DURATION + 150)
                                 vibration.vibrate(250);
-                            RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(), v.getWidth());
-                            lp.leftMargin = (int) event.getRawX() - v.getWidth() / 2;
-                            lp.topMargin = (int) event.getRawY() - v.getWidth() / 2;
+
+                            remove.setVisibility(View.VISIBLE);
                             v.setLayoutParams(lp);
+
+                            deleteShortcut(ll, lp.leftMargin, lp.topMargin, false);
                         }
                         break;
 
+                    //Start timer when view is touched
                     case MotionEvent.ACTION_DOWN:
                         startClickTime = Calendar.getInstance().getTimeInMillis();
                         break;
 
                     case MotionEvent.ACTION_UP:
                         clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
+                        remove.setVisibility(View.GONE);
+
+                        deleteShortcut(ll, lp.leftMargin, lp.topMargin, true);
+
                         if(clickDuration > MAX_CLICK_DURATION) {
                             //no click event
                             return true;
@@ -168,6 +217,7 @@ public class MainActivity extends Activity {
                 setHomeListeners(ll, position);
 
                 homeView.addView(ll, lp);
+
                 slidingDrawer.animateClose();
                 slidingDrawer.bringToFront();
                 return true;
