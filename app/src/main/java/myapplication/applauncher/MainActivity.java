@@ -109,7 +109,7 @@ public class MainActivity extends Activity {
     }
 
     public RelativeLayout.LayoutParams createLayoutParams(View v, int x, int y){
-        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(), v.getWidth());
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(), v.getHeight());
         lp.leftMargin = x;
         lp.topMargin = y;
         return lp;
@@ -150,7 +150,7 @@ public class MainActivity extends Activity {
             public boolean onTouch(View v, MotionEvent event) {
 
                 int x = (int) event.getRawX() - v.getWidth() / 2;
-                int y = (int) event.getRawY() - v.getWidth() / 2;
+                int y = (int) event.getRawY() - v.getHeight() / 2;
                 RelativeLayout.LayoutParams lp = createLayoutParams(v, x, y);
 
                 switch (event.getAction()){
