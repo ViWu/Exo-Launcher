@@ -15,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -62,8 +63,13 @@ public class MainActivity extends Activity {
         remove = (ImageView) findViewById(R.id.delete);
         remove.setVisibility(View.GONE);
 
+        Button appTab = (Button) findViewById(R.id.apps);
+        Button widgetTab = (Button) findViewById(R.id.widgets);
+        disableTabs(appTab, widgetTab);
+
         setDrawerListeners();
         setReceiver();
+
     }
 
     @Override
@@ -203,6 +209,8 @@ public class MainActivity extends Activity {
 
 
     private void setDrawerListeners(){
+
+        setSlidingListeners();
         //Active dragging mode when long click at each Grid view item
         drawerGrid.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
@@ -258,6 +266,52 @@ public class MainActivity extends Activity {
                 }
             }
         });
+    }
+
+    public void setSlidingListeners(){
+
+        final Button appTab = (Button) findViewById(R.id.apps);
+        final Button widgetTab = (Button) findViewById(R.id.widgets);
+        slidingDrawer.setOnDrawerScrollListener(new SlidingDrawer.OnDrawerScrollListener() {
+            @Override
+            public void onScrollStarted() {
+                //disableTabs(apps, widgets);
+            }
+
+            @Override
+            public void onScrollEnded() {
+                if(slidingDrawer.isOpened() && (!(slidingDrawer.isMoving()) || slidingDrawer.isEnabled())){
+                    enableTabs(appTab, widgetTab);
+                }
+
+            }
+        });
+
+        slidingDrawer.setOnDrawerOpenListener(new SlidingDrawer.OnDrawerOpenListener() {
+
+            @Override
+            public void onDrawerOpened() {
+                enableTabs(appTab, widgetTab);
+            }
+        });
+
+        slidingDrawer.setOnDrawerCloseListener(new SlidingDrawer.OnDrawerCloseListener() {
+
+            @Override
+            public void onDrawerClosed() {
+                disableTabs(appTab, widgetTab);
+            }
+        });
+    }
+
+    public void disableTabs(Button appTab, Button widgetTab){
+        appTab.setVisibility(View.GONE);
+        widgetTab.setVisibility(View.GONE);
+    }
+
+    public void enableTabs(Button appTab, Button widgetTab){
+        appTab.setVisibility(View.VISIBLE);
+        widgetTab.setVisibility(View.VISIBLE);
     }
 
     public class Receiver extends BroadcastReceiver {
