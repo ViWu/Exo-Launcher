@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
     SlidingDrawer slidingDrawer;
     RelativeLayout homeView;
 
-    protected static ArrayList<Application> apps;
+    protected static ArrayList<Application> apps, widgets;
     static boolean appLaunchable = true;
     private static final int MAX_CLICK_DURATION = 100;
     private static final int MIN_LONG_CLICK_DURATION = 1000;
@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        widgets = new ArrayList<>();
         apps = new ArrayList<>();
 
         drawerGrid = (GridView) findViewById(R.id.content);
@@ -63,12 +64,9 @@ public class MainActivity extends Activity {
         remove = (ImageView) findViewById(R.id.delete);
         remove.setVisibility(View.GONE);
 
-        Button appTab = (Button) findViewById(R.id.apps);
-        Button widgetTab = (Button) findViewById(R.id.widgets);
-        disableTabs(appTab, widgetTab);
-
         setDrawerListeners();
         setReceiver();
+        setTabs();
 
     }
 
@@ -79,6 +77,30 @@ public class MainActivity extends Activity {
         } else {
             super.onBackPressed();
         }
+    }
+
+    public void setTabs(){
+        final Context mContext = getApplicationContext();
+        Button appTab = (Button) findViewById(R.id.apps);
+        Button widgetTab = (Button) findViewById(R.id.widgets);
+        disableTabs(appTab, widgetTab);
+
+        appTab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getPackages();
+                drawerAdapterObject = new DrawerAdapter(mContext, apps);
+                drawerGrid.setAdapter(drawerAdapterObject);
+            }
+        });
+
+        widgetTab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DrawerAdapter widgetAdapterObject = new DrawerAdapter(mContext, widgets);
+                drawerGrid.setAdapter(widgetAdapterObject);
+            }
+        });
     }
 
     public void setReceiver(){
