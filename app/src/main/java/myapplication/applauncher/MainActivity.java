@@ -67,7 +67,6 @@ public class MainActivity extends Activity {
         setDrawerListeners();
         setReceiver();
         setTabs();
-
     }
 
     @Override
@@ -119,6 +118,7 @@ public class MainActivity extends Activity {
         List<ResolveInfo> packages = pm.queryIntentActivities(mainIntent, 0);
 
         String PACKAGE_NAME = getApplicationContext().getPackageName();
+        apps.clear();
 
         for (int i = 0; i < packages.size(); i++) {
             Application p = new Application();
@@ -137,16 +137,18 @@ public class MainActivity extends Activity {
         return lp;
     }
 
-    public void deleteShortcut(LinearLayout ll, int x, int y, boolean released){
+    public void deleteShortcut(LinearLayout ll, RelativeLayout.LayoutParams lp, View v, boolean released){
 
         float xLowerBound = remove.getX() - remove.getWidth() / 2 - 150;
         float xUpperBound = remove.getX() - remove.getWidth() / 2 + 150;
         float yLowerBound = remove.getY() - remove.getWidth() / 2 - 150;
         float yUpperBound = remove.getY() - remove.getWidth() / 2 + 150;
         android.view.ViewGroup.LayoutParams layoutParams = remove.getLayoutParams();
+        checkBounds(lp, v);
 
         //if app collides with delete icon
-        if((x > xLowerBound && x < xUpperBound) && (y > yLowerBound && y < yUpperBound )){
+        if((lp.leftMargin > xLowerBound && lp.leftMargin < xUpperBound)
+                && (lp.topMargin > yLowerBound && lp.topMargin < yUpperBound )){
             if(released)
                 ll.removeAllViews();
             //if hovered but not released
@@ -161,6 +163,24 @@ public class MainActivity extends Activity {
             layoutParams.width = 150;
             layoutParams.height = 150;
         }
+    }
+
+    //Prevents shortcuts from being dragged off screen
+    public void checkBounds(RelativeLayout.LayoutParams lp, View v){
+        View root = (View) v.getParent();
+        int rootHeight = root.getHeight();
+        int rootWidth = v.getRootView().getWidth();
+        if (lp.leftMargin + v.getWidth() > rootWidth- 50)
+            lp.leftMargin = rootWidth - v.getWidth() - 50;
+
+        else if (lp.leftMargin < 50)
+            lp.leftMargin = 50;
+
+        else if (lp.topMargin + v.getHeight() > rootHeight - 100)
+            lp.topMargin = rootHeight - v.getHeight() - 100;
+
+        else if (lp.topMargin < 100)
+            lp.topMargin = 100;
     }
 
     private void setHomeListeners(final LinearLayout ll, final int position){
@@ -179,15 +199,15 @@ public class MainActivity extends Activity {
 
                     case MotionEvent.ACTION_MOVE:
                         clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
+                        checkBounds(lp, v);
                         if(clickDuration >= MIN_LONG_CLICK_DURATION) {
 
-                            if(clickDuration < MIN_LONG_CLICK_DURATION + 150)
-                                vibration.vibrate(250);
+                            if(clickDuration < MIN_LONG_CLICK_DURATION + 75)
+                                vibration.vibrate(25);
 
                             remove.setVisibility(View.VISIBLE);
                             v.setLayoutParams(lp);
-
-                            deleteShortcut(ll, lp.leftMargin, lp.topMargin, false);
+                            deleteShortcut(ll, lp, v, false);
                         }
                         break;
 
@@ -200,7 +220,7 @@ public class MainActivity extends Activity {
                         clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
                         remove.setVisibility(View.GONE);
 
-                        deleteShortcut(ll, lp.leftMargin, lp.topMargin, true);
+                        deleteShortcut(ll, lp, v, true);
 
                         if(clickDuration > MAX_CLICK_DURATION) {
                             //no click event
