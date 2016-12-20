@@ -14,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -26,7 +27,6 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -241,7 +241,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    public RelativeLayout.LayoutParams createLayoutParams(View v, int x, int y){
+    public static RelativeLayout.LayoutParams createLayoutParams(View v, int x, int y){
         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(v.getWidth(), v.getHeight());
         lp.leftMargin = x;
         lp.topMargin = y;
@@ -277,21 +277,24 @@ public class MainActivity extends Activity {
     }
 
     //Prevents shortcuts from being dragged off screen
-    public void checkBounds(RelativeLayout.LayoutParams lp, View v){
+    public static void checkBounds(RelativeLayout.LayoutParams lp, View v){
         View root = (View) v.getParent();
         int rootHeight = root.getHeight();
         int rootWidth = v.getRootView().getWidth();
-        if (lp.leftMargin + v.getWidth() > rootWidth- 50)
-            lp.leftMargin = rootWidth - v.getWidth() - 50;
+        Log.d("STATE", "leftmargin: " + String.valueOf(lp.leftMargin) + ", topMargin: " + String.valueOf(lp.topMargin)
+                + ", vwidth: " + v.getWidth() + ", vheight: " + v.getHeight());
+        if (lp.leftMargin + v.getWidth() > rootWidth)
+            lp.leftMargin = rootWidth - v.getWidth();
 
-        else if (lp.leftMargin < 50)
-            lp.leftMargin = 50;
+        if (lp.leftMargin < 0) {
+            lp.leftMargin = 0;
+        }
 
-        else if (lp.topMargin + v.getHeight() > rootHeight - 100)
+        if (lp.topMargin + v.getHeight() > rootHeight - 100)
             lp.topMargin = rootHeight - v.getHeight() - 100;
 
-        else if (lp.topMargin < 100)
-            lp.topMargin = 100;
+        if (lp.topMargin < 0)
+            lp.topMargin = 0;
     }
 
     private void setHomeListeners(final LinearLayout ll, final int position){
