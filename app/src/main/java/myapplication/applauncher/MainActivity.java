@@ -2,7 +2,11 @@ package myapplication.applauncher;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.appwidget.AppWidgetManager;
+import android.appwidget.AppWidgetProvider;
+import android.appwidget.AppWidgetProviderInfo;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -10,10 +14,10 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.Vibrator;
-import android.support.design.widget.Snackbar;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridView;
@@ -35,13 +39,18 @@ public class MainActivity extends Activity {
     SlidingDrawer slidingDrawer;
     RelativeLayout homeView;
 
-    protected static ArrayList<Application> apps, widgets;
+    protected static ArrayList<Application> apps;
+    protected static ArrayList<Integer> widgets;
     static boolean appLaunchable = true;
     private static final int MAX_CLICK_DURATION = 100;
     private static final int MIN_LONG_CLICK_DURATION = 1000;
     private long startClickTime, clickDuration;
     public static Vibrator vibration;
     ImageView remove;
+
+    AppWidgetManager mAppWidgetManager;
+    LauncherAppWidgetHost mAppWidgetHost;
+    private static final int REQUEST_CREATE_APPWIDGET = 900;
 
 
     @Override
@@ -56,6 +65,7 @@ public class MainActivity extends Activity {
         slidingDrawer = (SlidingDrawer) findViewById(R.id.drawer);
         homeView = (RelativeLayout) findViewById(R.id.home_view);
 
+        getWidgetIDs();
         getPackages();
         drawerAdapterObject = new DrawerAdapter(this, apps);
         drawerGrid.setAdapter(drawerAdapterObject);
@@ -63,6 +73,9 @@ public class MainActivity extends Activity {
 
         remove = (ImageView) findViewById(R.id.delete);
         remove.setVisibility(View.GONE);
+
+        mAppWidgetManager = AppWidgetManager.getInstance(this);
+        mAppWidgetHost = new LauncherAppWidgetHost(this, R.id.APPWIDGET_HOST_ID);
 
         setDrawerListeners();
         setReceiver();
@@ -76,6 +89,91 @@ public class MainActivity extends Activity {
         } else {
             super.onBackPressed();
         }
+    }
+
+
+    void selectWidget() {
+        int appWidgetId = this.mAppWidgetHost.allocateAppWidgetId();
+        Intent pickIntent = new Intent(AppWidgetManager.ACTION_APPWIDGET_PICK);
+        pickIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+        addEmptyData(pickIntent);
+        startActivityForResult(pickIntent, R.id.REQUEST_PICK_APPWIDGET);
+    }
+
+    void addEmptyData(Intent pickIntent) {
+        ArrayList customInfo = new ArrayList();
+        pickIntent.putParcelableArrayListExtra(AppWidgetManager.EXTRA_CUSTOM_INFO, customInfo);
+        ArrayList customExtras = new ArrayList();
+        pickIntent.putParcelableArrayListExtra(AppWidgetManager.EXTRA_CUSTOM_EXTRAS, customExtras);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK ) {
+            if (requestCode == R.id.REQUEST_PICK_APPWIDGET) {
+                configureWidget(data);
+            }
+            else if (requestCode == REQUEST_CREATE_APPWIDGET) {
+                createWidget(data);
+            }
+        }
+        else if (resultCode == RESULT_CANCELED && data != null) {
+            int appWidgetId = data.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1);
+            if (appWidgetId != -1) {
+                mAppWidgetHost.deleteAppWidgetId(appWidgetId);
+            }
+        }
+    }
+
+    private void configureWidget(Intent data) {
+        Bundle extras = data.getExtras();
+        int appWidgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, -1);
+        AppWidgetProviderInfo appWidgetInfo = mAppWidgetManager.getAppWidgetInfo(appWidgetId);
+        if (appWidgetInfo.configure != null) {
+            Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE);
+            intent.setComponent(appWidgetInfo.configure);
+            intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+            startActivityForResult(intent, REQUEST_CREATE_APPWIDGET);
+        } else {
+            createWidget(data);
+        }
+    }
+
+    public void createWidget(Intent data) {
+        Bundle extras = data.getExtras();
+        int appWidgetId = extras.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, -1);
+        AppWidgetProviderInfo appWidgetInfo = mAppWidgetManager.getAppWidgetInfo(appWidgetId);
+        LauncherAppWidgetHostView hostView = (LauncherAppWidgetHostView) mAppWidgetHost.createView(this, appWidgetId, appWidgetInfo);
+        hostView.setAppWidget(appWidgetId, appWidgetInfo);
+
+        slidingDrawer.animateClose();
+        homeView.addView(hostView);
+        bringToBack(hostView);
+
+    }
+
+    public static void bringToBack(final View child) {
+        final ViewGroup parent = (ViewGroup)child.getParent();
+        if (parent != null) {
+            parent.removeView(child);
+            parent.addView(child, 0);
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mAppWidgetHost.startListening();
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mAppWidgetHost.stopListening();
+    }
+
+    public void removeWidget(LauncherAppWidgetHostView hostView) {
+        mAppWidgetHost.deleteAppWidgetId(hostView.getAppWidgetId());
+        homeView.removeView(hostView);
     }
 
     public void setTabs(){
@@ -96,8 +194,9 @@ public class MainActivity extends Activity {
         widgetTab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                DrawerAdapter widgetAdapterObject = new DrawerAdapter(mContext, widgets);
-                drawerGrid.setAdapter(widgetAdapterObject);
+                //DrawerAdapter widgetAdapterObject = new DrawerAdapter(mContext, widgets);
+                //drawerGrid.setAdapter(widgetAdapterObject);
+                selectWidget();
             }
         });
     }
@@ -109,6 +208,18 @@ public class MainActivity extends Activity {
         filter.addAction(Intent.ACTION_PACKAGE_CHANGED);
         filter.addDataScheme("package");
         registerReceiver(new Receiver(), filter);
+    }
+
+    public void getWidgetIDs(){
+        AppWidgetManager manager = AppWidgetManager.getInstance(this);
+        ArrayList<Integer> widgets = new ArrayList<>();
+        int[] IDs;
+
+        IDs = manager.getAppWidgetIds(new ComponentName(getApplicationContext(), AppWidgetProvider.class));
+        for(int i=0; i < IDs.length;i++){
+            //Toast.makeText(getBaseContext(),"IDS: " + IDs[i] ,Toast.LENGTH_LONG).show();
+            widgets.add(IDs[i]);
+        }
     }
 
     public void getPackages() {
