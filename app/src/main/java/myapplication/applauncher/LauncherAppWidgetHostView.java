@@ -16,6 +16,8 @@ public class LauncherAppWidgetHostView extends AppWidgetHostView {
     private static final int MIN_LONG_CLICK_DURATION = 1000;
     private long startClickTime, clickDuration;
     public static Vibrator vibration;
+    private int xDelta = this.getWidth() / 2;
+    private int yDelta = this.getHeight() / 2;
 
     public LauncherAppWidgetHostView(Context context) {
         super(context);
@@ -23,16 +25,16 @@ public class LauncherAppWidgetHostView extends AppWidgetHostView {
 
     public boolean onInterceptTouchEvent(MotionEvent ev) {
 
-        final int xPos = (int) ev.getRawX() - this.getWidth()/2;
-        final int yPos = (int) ev.getRawY() - this.getHeight()/2;
-        RelativeLayout.LayoutParams layoutParams = MainActivity.createLayoutParams(this, xPos , yPos);
+        final int xPos = (int) ev.getRawX();
+        final int yPos = (int) ev.getRawY();
         switch (ev.getAction()) {
             case MotionEvent.ACTION_MOVE:
                 clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
-                layoutParams.leftMargin = xPos - this.getWidth()/2;
-                layoutParams.topMargin = yPos - this.getHeight()/2;
-                MainActivity.checkBounds(layoutParams, this);
+                RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) this.getLayoutParams();
+                layoutParams.leftMargin = xPos - xDelta;
+                layoutParams.topMargin = yPos - yDelta;
                 vibration = MainActivity.vibration;
+                MainActivity.checkBounds(layoutParams, this);
                 if(clickDuration >= MIN_LONG_CLICK_DURATION) {
 
                     if (clickDuration < MIN_LONG_CLICK_DURATION + 75)
@@ -42,6 +44,9 @@ public class LauncherAppWidgetHostView extends AppWidgetHostView {
                 break;
             case MotionEvent.ACTION_DOWN: {
                 startClickTime = Calendar.getInstance().getTimeInMillis();
+                RelativeLayout.LayoutParams lParams = (RelativeLayout.LayoutParams) this.getLayoutParams();
+                xDelta = xPos - lParams.leftMargin;
+                yDelta = yPos - lParams.topMargin;
                 break;
             }
 
