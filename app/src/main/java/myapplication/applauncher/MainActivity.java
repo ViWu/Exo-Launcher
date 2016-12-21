@@ -31,6 +31,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 
 public class MainActivity extends Activity {
@@ -238,6 +239,7 @@ public class MainActivity extends Activity {
             if(!(p.name.equals(PACKAGE_NAME)))
                 apps.add(p);
         }
+        Collections.sort(apps);
     }
 
     public static RelativeLayout.LayoutParams createLayoutParams(View v, int x, int y){
@@ -257,7 +259,7 @@ public class MainActivity extends Activity {
         yLowerBound = removeAppButton.getY() - removeAppButton.getWidth() / 2 - 150;
         yUpperBound = removeAppButton.getY() - removeAppButton.getWidth() / 2 + 150;
 
-        //if removing widget, change button dimensions
+        //if removing widget
         if (item instanceof LauncherAppWidgetHostView){
             xLowerBound = removeAppButton.getX() - removeAppButton.getWidth() / 2 - 1000;
             xUpperBound = removeAppButton.getX() - removeAppButton.getWidth() / 2 + 1000;
