@@ -3,10 +3,9 @@ package myapplication.applauncher;
 import android.appwidget.AppWidgetHostView;
 import android.content.Context;
 import android.os.Vibrator;
-import android.support.design.widget.Snackbar;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 
 import java.util.Calendar;
 
@@ -27,10 +26,10 @@ public class LauncherAppWidgetHostView extends AppWidgetHostView {
 
         final int xPos = (int) ev.getRawX();
         final int yPos = (int) ev.getRawY();
+        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) this.getLayoutParams();
         switch (ev.getAction()) {
             case MotionEvent.ACTION_MOVE:
                 clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
-                RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) this.getLayoutParams();
                 layoutParams.leftMargin = xPos - xDelta;
                 layoutParams.topMargin = yPos - yDelta;
                 vibration = MainActivity.vibration;
@@ -39,7 +38,9 @@ public class LauncherAppWidgetHostView extends AppWidgetHostView {
 
                     if (clickDuration < MIN_LONG_CLICK_DURATION + 75)
                         vibration.vibrate(25);
+                    MainActivity.removeWidgetButton.setVisibility(View.VISIBLE);
                     this.setLayoutParams(layoutParams);
+                    MainActivity.deleteShortcut(this, layoutParams, false);
                 }
                 break;
             case MotionEvent.ACTION_DOWN: {
@@ -52,6 +53,9 @@ public class LauncherAppWidgetHostView extends AppWidgetHostView {
 
             case MotionEvent.ACTION_UP:
                 clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
+                MainActivity.removeWidgetButton.setVisibility(View.GONE);
+                MainActivity.removeWidgetButton.setImageResource(R.drawable.deletebar);
+                MainActivity.deleteShortcut(this, layoutParams, true);
                 if(clickDuration > MAX_CLICK_DURATION) {
                     //no click event
                     return true;

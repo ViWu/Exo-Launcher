@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.util.Log;
@@ -37,7 +38,7 @@ public class MainActivity extends Activity {
     DrawerAdapter drawerAdapterObject;
     GridView drawerGrid;
     SlidingDrawer slidingDrawer;
-    RelativeLayout homeView;
+    static RelativeLayout homeView;
 
     protected static ArrayList<Application> apps;
     protected static ArrayList<Integer> widgets;
@@ -46,10 +47,10 @@ public class MainActivity extends Activity {
     private static final int MIN_LONG_CLICK_DURATION = 1000;
     private long startClickTime, clickDuration;
     public static Vibrator vibration;
-    ImageView remove;
+    static ImageView removeAppButton, removeWidgetButton;
 
     AppWidgetManager mAppWidgetManager;
-    LauncherAppWidgetHost mAppWidgetHost;
+    static LauncherAppWidgetHost mAppWidgetHost;
     private static final int REQUEST_CREATE_APPWIDGET = 900;
 
 
@@ -71,12 +72,10 @@ public class MainActivity extends Activity {
         drawerGrid.setAdapter(drawerAdapterObject);
         vibration = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
-        remove = (ImageView) findViewById(R.id.delete);
-        remove.setVisibility(View.GONE);
-
         mAppWidgetManager = AppWidgetManager.getInstance(this);
         mAppWidgetHost = new LauncherAppWidgetHost(this, R.id.APPWIDGET_HOST_ID);
 
+        initTrashIcons();
         setDrawerListeners();
         setReceiver();
         setTabs();
@@ -171,7 +170,7 @@ public class MainActivity extends Activity {
         mAppWidgetHost.stopListening();
     }
 
-    public void removeWidget(LauncherAppWidgetHostView hostView) {
+    public static void removeWidget(LauncherAppWidgetHostView hostView) {
         mAppWidgetHost.deleteAppWidgetId(hostView.getAppWidgetId());
         homeView.removeView(hostView);
     }
@@ -248,31 +247,67 @@ public class MainActivity extends Activity {
         return lp;
     }
 
-    public void deleteShortcut(LinearLayout ll, RelativeLayout.LayoutParams lp, View v, boolean released){
+    public static void deleteShortcut(Object item, RelativeLayout.LayoutParams lp, boolean released){
 
-        float xLowerBound = remove.getX() - remove.getWidth() / 2 - 150;
-        float xUpperBound = remove.getX() - remove.getWidth() / 2 + 150;
-        float yLowerBound = remove.getY() - remove.getWidth() / 2 - 150;
-        float yUpperBound = remove.getY() - remove.getWidth() / 2 + 150;
-        android.view.ViewGroup.LayoutParams layoutParams = remove.getLayoutParams();
-        checkBounds(lp, v);
+        float xLowerBound , xUpperBound, yLowerBound, yUpperBound;
+
+        //if removing an app
+        xLowerBound = removeAppButton.getX() - removeAppButton.getWidth() / 2 - 150;
+        xUpperBound = removeAppButton.getX() - removeAppButton.getWidth() / 2 + 150;
+        yLowerBound = removeAppButton.getY() - removeAppButton.getWidth() / 2 - 150;
+        yUpperBound = removeAppButton.getY() - removeAppButton.getWidth() / 2 + 150;
+
+        //if removing widget, change button dimensions
+        if (item instanceof LauncherAppWidgetHostView){
+            xLowerBound = removeAppButton.getX() - removeAppButton.getWidth() / 2 - 1000;
+            xUpperBound = removeAppButton.getX() - removeAppButton.getWidth() / 2 + 1000;
+            yLowerBound = removeAppButton.getY() - removeAppButton.getWidth() / 2 - 40;
+            yUpperBound = removeAppButton.getY() - removeAppButton.getWidth() / 2 + 40;
+        }
+
+
+
+        android.view.ViewGroup.LayoutParams removeAppParams = removeAppButton.getLayoutParams();
+        android.view.ViewGroup.LayoutParams removeWidgetParams = removeWidgetButton.getLayoutParams();
+        bringToBack(removeWidgetButton);
 
         //if app collides with delete icon
         if((lp.leftMargin > xLowerBound && lp.leftMargin < xUpperBound)
                 && (lp.topMargin > yLowerBound && lp.topMargin < yUpperBound )){
-            if(released)
-                ll.removeAllViews();
+            if(released) {
+                if(item instanceof LinearLayout) {
+                    LinearLayout appShortcut = (LinearLayout) item;
+                    appShortcut.removeAllViews();
+                }
+                else if (item instanceof LauncherAppWidgetHostView){
+                    LauncherAppWidgetHostView widget = (LauncherAppWidgetHostView) item;
+                    removeWidget(widget);
+                }
+            }
             //if hovered but not released
             else{
-                layoutParams.width = 250;
-                layoutParams.height = 250;
-                remove.setLayoutParams(layoutParams);
+                if(item instanceof LinearLayout) {
+                    removeAppParams.width = 350;
+                    removeAppParams.height = 350;
+                    removeAppButton.setLayoutParams(removeAppParams);
+                }
+                else if (item instanceof LauncherAppWidgetHostView){
+                    removeWidgetParams.width = 1000;
+                    removeWidgetParams.height = 150;
+                    removeWidgetButton.setLayoutParams(removeWidgetParams);
+                    removeWidgetButton.setImageResource(R.drawable.deletebarhovered);
+                }
             }
         }
         //no collision
         else{
-            layoutParams.width = 150;
-            layoutParams.height = 150;
+            if (item instanceof LinearLayout) {
+                removeAppParams.width = 150;
+                removeAppParams.height = 150;
+            }
+            else if (item instanceof LauncherAppWidgetHostView){
+                removeWidgetButton.setImageResource(R.drawable.deletebar);
+            }
         }
     }
 
@@ -319,9 +354,9 @@ public class MainActivity extends Activity {
                             if(clickDuration < MIN_LONG_CLICK_DURATION + 75)
                                 vibration.vibrate(25);
 
-                            remove.setVisibility(View.VISIBLE);
+                            removeAppButton.setVisibility(View.VISIBLE);
                             v.setLayoutParams(lp);
-                            deleteShortcut(ll, lp, v, false);
+                            deleteShortcut(ll, lp, false);
                         }
                         break;
 
@@ -332,9 +367,9 @@ public class MainActivity extends Activity {
 
                     case MotionEvent.ACTION_UP:
                         clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
-                        remove.setVisibility(View.GONE);
+                        removeAppButton.setVisibility(View.GONE);
 
-                        deleteShortcut(ll, lp, v, true);
+                        deleteShortcut(ll, lp, true);
 
                         if(clickDuration > MAX_CLICK_DURATION) {
                             //no click event
@@ -468,6 +503,14 @@ public class MainActivity extends Activity {
     public void enableTabs(Button appTab, Button widgetTab){
         appTab.setVisibility(View.VISIBLE);
         widgetTab.setVisibility(View.VISIBLE);
+    }
+
+    public void initTrashIcons(){
+        removeAppButton = (ImageView) findViewById(R.id.deleteApp);
+        removeAppButton.setVisibility(View.GONE);
+
+        removeWidgetButton = (ImageView) findViewById(R.id.deleteWidget);
+        removeWidgetButton.setVisibility(View.GONE);
     }
 
     public class Receiver extends BroadcastReceiver {
