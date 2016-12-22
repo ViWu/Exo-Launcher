@@ -279,7 +279,7 @@ public class MainActivity extends Activity {
             if(released) {
                 if(item instanceof LinearLayout) {
                     LinearLayout appShortcut = (LinearLayout) item;
-                    appShortcut.removeAllViews();
+                    homeView.removeView(appShortcut);
                 }
                 else if (item instanceof LauncherAppWidgetHostView){
                     LauncherAppWidgetHostView widget = (LauncherAppWidgetHostView) item;
