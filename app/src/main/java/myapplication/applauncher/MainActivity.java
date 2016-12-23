@@ -16,10 +16,13 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridView;
@@ -43,6 +46,8 @@ public class MainActivity extends Activity {
 
     protected static ArrayList<Application> apps;
     protected static ArrayList<Integer> widgets;
+    protected static ArrayList<Application> appShortcuts;
+    protected static ArrayList<LauncherAppWidgetHostView> widgetShortcuts;
     static boolean appLaunchable = true;
     private static final int MAX_CLICK_DURATION = 100;
     private static final int MIN_LONG_CLICK_DURATION = 1000;
@@ -53,6 +58,8 @@ public class MainActivity extends Activity {
     AppWidgetManager mAppWidgetManager;
     static LauncherAppWidgetHost mAppWidgetHost;
     private static final int REQUEST_CREATE_APPWIDGET = 900;
+    static int appUid = 0;
+    static int widgetUid = 0;
 
 
     @Override
@@ -62,6 +69,8 @@ public class MainActivity extends Activity {
 
         widgets = new ArrayList<>();
         apps = new ArrayList<>();
+        appShortcuts = new ArrayList<>();
+        widgetShortcuts = new ArrayList<>();
 
         drawerGrid = (GridView) findViewById(R.id.content);
         slidingDrawer = (SlidingDrawer) findViewById(R.id.drawer);
@@ -76,6 +85,7 @@ public class MainActivity extends Activity {
         mAppWidgetManager = AppWidgetManager.getInstance(this);
         mAppWidgetHost = new LauncherAppWidgetHost(this, R.id.APPWIDGET_HOST_ID);
 
+        setSwipeDetector();
         initTrashIcons();
         setDrawerListeners();
         setReceiver();
@@ -89,6 +99,35 @@ public class MainActivity extends Activity {
         } else {
             super.onBackPressed();
         }
+    }
+
+    void setSwipeDetector(){
+        final Animation[] slide = new Animation[1];
+        homeView.setOnTouchListener(new OnSwipeListener(getApplicationContext()) {
+            @Override
+            public void onSwipeLeft() {
+                Log.d("STATE", "Swiped left" );
+                Log.d("STATE", "widget arr size: " + appShortcuts.size() + ", uid: " + appUid);
+                slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideoffleft);
+                for (int i = 0; i < appShortcuts.size(); i++){
+                    appShortcuts.get(i).ll.startAnimation(slide[0]);
+                }
+                for (int i = 0; i < widgetShortcuts.size(); i++){
+                    widgetShortcuts.get(i).startAnimation(slide[0]);
+                }
+            }
+            public void onSwipeRight() {
+                Log.d("STATE", "Swiped right" );
+                Log.d("STATE", "widget arr size: " + appShortcuts.size() + ", uid: " + appUid);
+                slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideoffright);
+                for (int i = 0; i < appShortcuts.size(); i++){
+                    appShortcuts.get(i).ll.startAnimation(slide[0]);
+                }
+                for (int i = 0; i < widgetShortcuts.size(); i++){
+                    widgetShortcuts.get(i).startAnimation(slide[0]);
+                }
+            }
+        });
     }
 
 
@@ -145,7 +184,10 @@ public class MainActivity extends Activity {
         AppWidgetProviderInfo appWidgetInfo = mAppWidgetManager.getAppWidgetInfo(appWidgetId);
         LauncherAppWidgetHostView hostView = (LauncherAppWidgetHostView) mAppWidgetHost.createView(this, appWidgetId, appWidgetInfo);
         hostView.setAppWidget(appWidgetId, appWidgetInfo);
+        hostView.uid = widgetUid;
+        widgetUid++;
 
+        widgetShortcuts.add(hostView);
         slidingDrawer.animateClose();
         homeView.addView(hostView);
         bringToBack(hostView);
@@ -172,8 +214,28 @@ public class MainActivity extends Activity {
     }
 
     public static void removeWidget(LauncherAppWidgetHostView hostView) {
+        for(int i=0; i < widgetShortcuts.size(); i++){
+            if(hostView.uid == widgetShortcuts.get(i).uid)
+                widgetShortcuts.remove(i);
+        }
         mAppWidgetHost.deleteAppWidgetId(hostView.getAppWidgetId());
         homeView.removeView(hostView);
+    }
+
+    public static void createApp(LinearLayout ll){
+        Application app = new Application();
+        app.ll = ll;
+        app.uid = appUid;
+        appUid++;
+        appShortcuts.add(app);
+    }
+
+    public static void removeApp (LinearLayout appView){
+        for(int i=0; i <appShortcuts.size();i++){
+            if(appView.toString().equals(appShortcuts.get(i).ll.toString()))
+                appShortcuts.remove(i);
+        }
+        homeView.removeView(appView);
     }
 
     public void setTabs(){
@@ -278,8 +340,8 @@ public class MainActivity extends Activity {
                 && (lp.topMargin > yLowerBound && lp.topMargin < yUpperBound )){
             if(released) {
                 if(item instanceof LinearLayout) {
-                    LinearLayout appShortcut = (LinearLayout) item;
-                    homeView.removeView(appShortcut);
+                    LinearLayout appView = (LinearLayout) item;
+                    removeApp(appView);
                 }
                 else if (item instanceof LauncherAppWidgetHostView){
                     LauncherAppWidgetHostView widget = (LauncherAppWidgetHostView) item;
@@ -427,6 +489,7 @@ public class MainActivity extends Activity {
                 setHomeListeners(ll, position);
 
                 homeView.addView(ll, lp);
+                createApp(ll);
 
                 slidingDrawer.animateClose();
                 slidingDrawer.bringToFront();

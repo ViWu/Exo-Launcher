@@ -17,6 +17,7 @@ public class LauncherAppWidgetHostView extends AppWidgetHostView {
     public static Vibrator vibration;
     private int xDelta = this.getWidth() / 2;
     private int yDelta = this.getHeight() / 2;
+    int uid;
 
     public LauncherAppWidgetHostView(Context context) {
         super(context);
