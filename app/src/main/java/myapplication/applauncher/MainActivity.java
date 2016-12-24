@@ -12,6 +12,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Vibrator;
@@ -31,10 +33,14 @@ import android.widget.RelativeLayout;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -96,6 +102,7 @@ public class MainActivity extends Activity {
         setDrawerListeners();
         setReceiver();
         setTabs();
+        fileRead();
     }
 
     @Override
@@ -237,6 +244,7 @@ public class MainActivity extends Activity {
         app.x = lp.leftMargin;
         app.y = lp.topMargin;
         app.label = (String) ((TextView) v.findViewById(R.id.icon_text)).getText();
+        app.icon = ((ImageView)v.findViewById(R.id.icon_image)).getDrawable();
         appUid++;
         appShortcuts.add(app);
         //Log.d("STATE", "created " + app.label);
@@ -261,8 +269,40 @@ public class MainActivity extends Activity {
                 bw.write(appShortcuts.get(i).uid + "\n");
                 bw.write(appShortcuts.get(i).x + "\n");
                 bw.write(appShortcuts.get(i).y + "\n");
+                convertToBitmap(i);
             }
             bw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void fileRead(){
+
+        try {
+            FileReader in = new FileReader(dir + "/" + "1.txt");
+            BufferedReader br = new BufferedReader(in);
+            String line = null;
+            line = br.readLine();
+            while (line!=null) {
+                Log.d("STATE", line);
+                line = br.readLine();
+            }
+            in.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //converts icon drawable into bitmap for storage
+    public static void convertToBitmap(int pos){
+        try {
+            File dest = new File(dir + "/", appShortcuts.get(pos).label+".png");
+            FileOutputStream fOut = new FileOutputStream(String.valueOf(dest));
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) appShortcuts.get(pos).icon;
+            Bitmap bitmap = bitmapDrawable.getBitmap();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, fOut);
+            fOut.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
