@@ -9,6 +9,7 @@ public class Application implements Comparable<Application>{
     String label;
     int uid;
     LinearLayout ll;
+    int x,y;
 
     @Override
     public int compareTo(Application app) {

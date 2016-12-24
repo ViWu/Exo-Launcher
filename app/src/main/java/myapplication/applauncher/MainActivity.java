@@ -16,7 +16,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -32,6 +31,10 @@ import android.widget.RelativeLayout;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -60,6 +63,7 @@ public class MainActivity extends Activity {
     private static final int REQUEST_CREATE_APPWIDGET = 900;
     static int appUid = 0;
     static int widgetUid = 0;
+    static File dir;
 
 
     @Override
@@ -85,6 +89,8 @@ public class MainActivity extends Activity {
         mAppWidgetManager = AppWidgetManager.getInstance(this);
         mAppWidgetHost = new LauncherAppWidgetHost(this, R.id.APPWIDGET_HOST_ID);
 
+        dir = getFilesDir();
+
         setSwipeDetector();
         initTrashIcons();
         setDrawerListeners();
@@ -102,13 +108,14 @@ public class MainActivity extends Activity {
     }
 
     void setSwipeDetector(){
-        final Animation[] slide = new Animation[1];
+        final Animation[] slide = new Animation[2];
         homeView.setOnTouchListener(new OnSwipeListener(getApplicationContext()) {
             @Override
             public void onSwipeLeft() {
                 Log.d("STATE", "Swiped left" );
                 Log.d("STATE", "widget arr size: " + appShortcuts.size() + ", uid: " + appUid);
                 slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideoffleft);
+                slide[1] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideinleft);
                 for (int i = 0; i < appShortcuts.size(); i++){
                     appShortcuts.get(i).ll.startAnimation(slide[0]);
                 }
@@ -120,6 +127,7 @@ public class MainActivity extends Activity {
                 Log.d("STATE", "Swiped right" );
                 Log.d("STATE", "widget arr size: " + appShortcuts.size() + ", uid: " + appUid);
                 slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideoffright);
+                slide[1] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideinleft);
                 for (int i = 0; i < appShortcuts.size(); i++){
                     appShortcuts.get(i).ll.startAnimation(slide[0]);
                 }
@@ -222,12 +230,16 @@ public class MainActivity extends Activity {
         homeView.removeView(hostView);
     }
 
-    public static void createApp(LinearLayout ll){
+    public static void createApp(LinearLayout ll, RelativeLayout.LayoutParams lp, View v){
         Application app = new Application();
         app.ll = ll;
         app.uid = appUid;
+        app.x = lp.leftMargin;
+        app.y = lp.topMargin;
+        app.label = (String) ((TextView) v.findViewById(R.id.icon_text)).getText();
         appUid++;
         appShortcuts.add(app);
+        //Log.d("STATE", "created " + app.label);
     }
 
     public static void removeApp (LinearLayout appView){
@@ -236,6 +248,24 @@ public class MainActivity extends Activity {
                 appShortcuts.remove(i);
         }
         homeView.removeView(appView);
+    }
+
+    public static void fileWrite() {
+
+        try {
+            File file = new File(dir + "/" + "1.txt");
+            FileWriter fw = new FileWriter(file);
+            BufferedWriter bw = new BufferedWriter(fw);
+            for(int i=0; i <appShortcuts.size();i++) {
+                bw.write(appShortcuts.get(i).label + "\n");
+                bw.write(appShortcuts.get(i).uid + "\n");
+                bw.write(appShortcuts.get(i).x + "\n");
+                bw.write(appShortcuts.get(i).y + "\n");
+            }
+            bw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void setTabs(){
@@ -342,6 +372,7 @@ public class MainActivity extends Activity {
                 if(item instanceof LinearLayout) {
                     LinearLayout appView = (LinearLayout) item;
                     removeApp(appView);
+                    fileWrite();
                 }
                 else if (item instanceof LauncherAppWidgetHostView){
                     LauncherAppWidgetHostView widget = (LauncherAppWidgetHostView) item;
@@ -489,7 +520,8 @@ public class MainActivity extends Activity {
                 setHomeListeners(ll, position);
 
                 homeView.addView(ll, lp);
-                createApp(ll);
+                createApp(ll, lp, item);
+                fileWrite();
 
                 slidingDrawer.animateClose();
                 slidingDrawer.bringToFront();
