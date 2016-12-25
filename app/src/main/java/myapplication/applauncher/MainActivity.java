@@ -13,6 +13,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -102,7 +103,7 @@ public class MainActivity extends Activity {
         setDrawerListeners();
         setReceiver();
         setTabs();
-        fileRead();
+        loadPage();
     }
 
     @Override
@@ -258,7 +259,7 @@ public class MainActivity extends Activity {
         homeView.removeView(appView);
     }
 
-    public static void fileWrite() {
+    public static void savePage() {
 
         try {
             File file = new File(dir + "/" + "1.txt");
@@ -277,7 +278,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    public void fileRead(){
+    public void loadPage(){
 
         try {
             FileReader in = new FileReader(dir + "/" + "1.txt");
@@ -285,13 +286,66 @@ public class MainActivity extends Activity {
             String line = null;
             line = br.readLine();
             while (line!=null) {
-                Log.d("STATE", line);
+                //set label and icon
+                Log.d("STATE", "label: " + line);
+                LayoutInflater li = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                LinearLayout ll = (LinearLayout) li.inflate(R.layout.drawer_item, null);
+                ((TextView)ll.findViewById(R.id.icon_text)).setText(line);
+                Bitmap bitmap = loadIcon(line);
+                ((ImageView)ll.findViewById(R.id.icon_image)).setImageBitmap(bitmap);
+                Application app = new Application();
+                app.ll = ll;
+                app.label = line;
+                app.icon = new BitmapDrawable(getResources(), bitmap);;
+                line = br.readLine();
+
+                //set uid
+                Log.d("STATE", "uid: " + line);
+                app.uid = Integer.parseInt(line);
+                appUid++;
+                appShortcuts.add(app);
+                line = br.readLine();
+
+                //set location
+                Log.d("STATE", "X:" + line);
+                RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(360, 368);
+                lp.leftMargin = Integer.parseInt(line);
+                app.x = Integer.parseInt(line);
+                line = br.readLine();
+
+                Log.d("STATE", "Y: " + line);
+                lp.topMargin = Integer.parseInt(line);
+                app.y = Integer.parseInt(line);
+                setHomeListeners(ll, 0);
+                homeView.addView(ll, lp);
                 line = br.readLine();
             }
             in.close();
+            slidingDrawer.bringToFront();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    //Searches for the .png from internal storage and converts it into a bitmap
+    public Bitmap loadIcon(String pngfile){
+        File dir = getFilesDir();
+        File[] subFiles = dir.listFiles();
+        String fileName;
+        Bitmap bitmap = null;
+
+        if (subFiles != null)
+        {
+            for (File file : subFiles)
+            {
+                fileName = file.getName();
+                if (fileName.equals(pngfile +".png")) {
+                    bitmap = BitmapFactory.decodeFile(dir + "/" + pngfile +".png");
+                    return bitmap;
+                }
+            }
+        }
+        return bitmap;
     }
 
     //converts icon drawable into bitmap for storage
@@ -412,7 +466,7 @@ public class MainActivity extends Activity {
                 if(item instanceof LinearLayout) {
                     LinearLayout appView = (LinearLayout) item;
                     removeApp(appView);
-                    fileWrite();
+                    savePage();
                 }
                 else if (item instanceof LauncherAppWidgetHostView){
                     LauncherAppWidgetHostView widget = (LauncherAppWidgetHostView) item;
@@ -545,6 +599,7 @@ public class MainActivity extends Activity {
                 RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(item.getWidth(),item.getHeight());
                 lp.leftMargin = (int) item.getX();
                 lp.topMargin = (int) item.getY();
+                Log.d("STATE", "item width: " + item.getWidth() + ", item height: " + item.getHeight());
 
                 vibration.vibrate(200);
 
@@ -561,7 +616,7 @@ public class MainActivity extends Activity {
 
                 homeView.addView(ll, lp);
                 createApp(ll, lp, item);
-                fileWrite();
+                savePage();
 
                 slidingDrawer.animateClose();
                 slidingDrawer.bringToFront();
