@@ -10,6 +10,7 @@ public class Application implements Comparable<Application>{
     int uid;
     LinearLayout ll;
     int x,y;
+    int drawerIndex;
 
     @Override
     public int compareTo(Application app) {

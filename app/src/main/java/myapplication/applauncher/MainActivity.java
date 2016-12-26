@@ -238,7 +238,7 @@ public class MainActivity extends Activity {
         homeView.removeView(hostView);
     }
 
-    public static void createApp(LinearLayout ll, RelativeLayout.LayoutParams lp, View v){
+    public static void createApp(LinearLayout ll, RelativeLayout.LayoutParams lp, View v, int pos){
         Application app = new Application();
         app.ll = ll;
         app.uid = appUid;
@@ -246,6 +246,7 @@ public class MainActivity extends Activity {
         app.y = lp.topMargin;
         app.label = (String) ((TextView) v.findViewById(R.id.icon_text)).getText();
         app.icon = ((ImageView)v.findViewById(R.id.icon_image)).getDrawable();
+        app.drawerIndex = pos;
         appUid++;
         appShortcuts.add(app);
         //Log.d("STATE", "created " + app.label);
@@ -268,6 +269,7 @@ public class MainActivity extends Activity {
             for(int i=0; i <appShortcuts.size();i++) {
                 bw.write(appShortcuts.get(i).label + "\n");
                 bw.write(appShortcuts.get(i).uid + "\n");
+                bw.write(appShortcuts.get(i).drawerIndex + "\n");
                 bw.write(appShortcuts.get(i).x + "\n");
                 bw.write(appShortcuts.get(i).y + "\n");
                 convertToBitmap(i);
@@ -303,7 +305,11 @@ public class MainActivity extends Activity {
                 Log.d("STATE", "uid: " + line);
                 app.uid = Integer.parseInt(line);
                 appUid++;
-                appShortcuts.add(app);
+                line = br.readLine();
+
+                //set drawer index
+                Log.d("STATE", "pos: " + line);
+                app.drawerIndex = Integer.parseInt(line);
                 line = br.readLine();
 
                 //set location
@@ -316,7 +322,8 @@ public class MainActivity extends Activity {
                 Log.d("STATE", "Y: " + line);
                 lp.topMargin = Integer.parseInt(line);
                 app.y = Integer.parseInt(line);
-                setHomeListeners(ll, 0);
+                appShortcuts.add(app);
+                setHomeListeners(ll,  app.drawerIndex);
                 homeView.addView(ll, lp);
                 line = br.readLine();
             }
@@ -615,7 +622,7 @@ public class MainActivity extends Activity {
                 setHomeListeners(ll, position);
 
                 homeView.addView(ll, lp);
-                createApp(ll, lp, item);
+                createApp(ll, lp, item, position);
                 savePage();
 
                 slidingDrawer.animateClose();
