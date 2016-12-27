@@ -71,6 +71,7 @@ public class MainActivity extends Activity {
     static int appUid = 0;
     static int widgetUid = 0;
     static File dir;
+    static int currIndex = 1;
 
 
     @Override
@@ -103,7 +104,7 @@ public class MainActivity extends Activity {
         setDrawerListeners();
         setReceiver();
         setTabs();
-        loadPage();
+        loadPage(1);
     }
 
     @Override
@@ -116,34 +117,77 @@ public class MainActivity extends Activity {
     }
 
     void setSwipeDetector(){
-        final Animation[] slide = new Animation[2];
         homeView.setOnTouchListener(new OnSwipeListener(getApplicationContext()) {
             @Override
             public void onSwipeLeft() {
                 Log.d("STATE", "Swiped left" );
                 Log.d("STATE", "widget arr size: " + appShortcuts.size() + ", uid: " + appUid);
-                slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideoffleft);
-                slide[1] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideinleft);
-                for (int i = 0; i < appShortcuts.size(); i++){
-                    appShortcuts.get(i).ll.startAnimation(slide[0]);
-                }
-                for (int i = 0; i < widgetShortcuts.size(); i++){
-                    widgetShortcuts.get(i).startAnimation(slide[0]);
-                }
+                transitionOut(false);
             }
             public void onSwipeRight() {
                 Log.d("STATE", "Swiped right" );
                 Log.d("STATE", "widget arr size: " + appShortcuts.size() + ", uid: " + appUid);
-                slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideoffright);
-                slide[1] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideinleft);
-                for (int i = 0; i < appShortcuts.size(); i++){
-                    appShortcuts.get(i).ll.startAnimation(slide[0]);
-                }
-                for (int i = 0; i < widgetShortcuts.size(); i++){
-                    widgetShortcuts.get(i).startAnimation(slide[0]);
-                }
+                transitionOut(true);
             }
         });
+    }
+
+    //Old page content slides out of homeview
+    public void transitionOut(boolean right){
+        final Animation[] slide = new Animation[1];
+        if(right)
+            slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideoffright);
+        else
+            slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideoffleft);
+        for (int i = 0; i < appShortcuts.size(); i++){
+            appShortcuts.get(i).ll.startAnimation(slide[0]);
+            homeView.removeView(appShortcuts.get(i).ll);
+        }
+        for (int i = 0; i < widgetShortcuts.size(); i++){
+            widgetShortcuts.get(i).startAnimation(slide[0]);
+        }
+        currIndex = switchPage(currIndex, right);
+    }
+
+    //New page content slides into homeview
+    public void transitionIn(int index, boolean right){
+        final Animation[] slide = new Animation[1];
+        appShortcuts.clear();
+        widgetShortcuts.clear();
+        loadPage(index);
+        if(right)
+            slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideinright);
+        else
+            slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideinleft);
+        for (int i = 0; i < appShortcuts.size(); i++){
+            appShortcuts.get(i).ll.startAnimation(slide[0]);
+        }
+        for (int i = 0; i < widgetShortcuts.size(); i++){
+            widgetShortcuts.get(i).startAnimation(slide[0]);
+        }
+    }
+
+    //Tracks which page the user is on
+    int switchPage(int index, boolean right){
+        int maxPages = 3;       //start with 3 for testing purposes
+        if(right){
+            if(index - 1 <= 0){
+                index = maxPages;
+            }
+            else
+                index--;
+            transitionIn(index, true);
+        }
+        else{
+            if(index + 1 <= maxPages)
+                index++;
+            else
+                index = 1;
+            transitionIn(index, false);
+        }
+
+
+        return index;
     }
 
 
@@ -260,10 +304,10 @@ public class MainActivity extends Activity {
         homeView.removeView(appView);
     }
 
-    public static void savePage() {
+    public static void savePage(int pg) {
 
         try {
-            File file = new File(dir + "/" + "1.txt");
+            File file = new File(dir + "/" + pg + ".txt");
             FileWriter fw = new FileWriter(file);
             BufferedWriter bw = new BufferedWriter(fw);
             for(int i=0; i <appShortcuts.size();i++) {
@@ -280,58 +324,89 @@ public class MainActivity extends Activity {
         }
     }
 
-    public void loadPage(){
+    public void loadPage(int pg){
 
         try {
-            FileReader in = new FileReader(dir + "/" + "1.txt");
-            BufferedReader br = new BufferedReader(in);
-            String line = null;
-            line = br.readLine();
-            while (line!=null) {
-                //set label and icon
-                Log.d("STATE", "label: " + line);
-                LayoutInflater li = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                LinearLayout ll = (LinearLayout) li.inflate(R.layout.drawer_item, null);
-                ((TextView)ll.findViewById(R.id.icon_text)).setText(line);
-                Bitmap bitmap = loadIcon(line);
-                ((ImageView)ll.findViewById(R.id.icon_image)).setImageBitmap(bitmap);
-                Application app = new Application();
-                app.ll = ll;
-                app.label = line;
-                app.icon = new BitmapDrawable(getResources(), bitmap);;
+            boolean exists = checkFileExists(String.valueOf(currIndex));
+            Log.d("STATE", "exists: " + exists);
+            if (exists) {
+                FileReader in = new FileReader(dir + "/" + pg + ".txt");
+                BufferedReader br = new BufferedReader(in);
+                String line = null;
                 line = br.readLine();
 
-                //set uid
-                Log.d("STATE", "uid: " + line);
-                app.uid = Integer.parseInt(line);
-                appUid++;
-                line = br.readLine();
+                while (line != null) {
+                    //set label and icon
+                    Log.d("STATE", "label: " + line);
+                    LayoutInflater li = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                    LinearLayout ll = (LinearLayout) li.inflate(R.layout.drawer_item, null);
+                    ((TextView) ll.findViewById(R.id.icon_text)).setText(line);
+                    Bitmap bitmap = loadIcon(line);
+                    ((ImageView) ll.findViewById(R.id.icon_image)).setImageBitmap(bitmap);
+                    Application app = new Application();
+                    app.ll = ll;
+                    app.label = line;
+                    app.icon = new BitmapDrawable(getResources(), bitmap);
+                    ;
+                    line = br.readLine();
 
-                //set drawer index
-                Log.d("STATE", "pos: " + line);
-                app.drawerIndex = Integer.parseInt(line);
-                line = br.readLine();
+                    //set uid
+                    Log.d("STATE", "uid: " + line);
+                    app.uid = Integer.parseInt(line);
+                    appUid++;
+                    line = br.readLine();
 
-                //set location
-                Log.d("STATE", "X:" + line);
-                RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(360, 368);
-                lp.leftMargin = Integer.parseInt(line);
-                app.x = Integer.parseInt(line);
-                line = br.readLine();
+                    //set drawer index
+                    Log.d("STATE", "pos: " + line);
+                    app.drawerIndex = Integer.parseInt(line);
+                    line = br.readLine();
 
-                Log.d("STATE", "Y: " + line);
-                lp.topMargin = Integer.parseInt(line);
-                app.y = Integer.parseInt(line);
-                appShortcuts.add(app);
-                setHomeListeners(ll,  app.drawerIndex);
-                homeView.addView(ll, lp);
-                line = br.readLine();
+                    //set location
+                    Log.d("STATE", "X:" + line);
+                    RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(360, 368);
+                    lp.leftMargin = Integer.parseInt(line);
+                    app.x = Integer.parseInt(line);
+                    line = br.readLine();
+
+                    Log.d("STATE", "Y: " + line);
+                    lp.topMargin = Integer.parseInt(line);
+                    app.y = Integer.parseInt(line);
+                    appShortcuts.add(app);
+                    setHomeListeners(ll, app.drawerIndex);
+                    homeView.addView(ll, lp);
+                    line = br.readLine();
+                }
+                in.close();
+                slidingDrawer.bringToFront();
             }
-            in.close();
-            slidingDrawer.bringToFront();
-        } catch (IOException e) {
+            else{
+                File file = new File(dir + "/" + pg + ".txt");
+                FileWriter fw = new FileWriter(file);
+                BufferedWriter bw = new BufferedWriter(fw);
+                bw.close();
+            }
+
+        }catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public boolean checkFileExists(String setName){
+        File dir = getFilesDir();
+        File[] subFiles = dir.listFiles();
+        String fileName;
+
+        if (subFiles != null)
+        {
+            for (File file : subFiles)
+            {
+                fileName = file.getName();
+                if (fileName.equals(setName+".txt")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     //Searches for the .png from internal storage and converts it into a bitmap
@@ -473,7 +548,7 @@ public class MainActivity extends Activity {
                 if(item instanceof LinearLayout) {
                     LinearLayout appView = (LinearLayout) item;
                     removeApp(appView);
-                    savePage();
+                    savePage(currIndex);
                 }
                 else if (item instanceof LauncherAppWidgetHostView){
                     LauncherAppWidgetHostView widget = (LauncherAppWidgetHostView) item;
@@ -623,7 +698,7 @@ public class MainActivity extends Activity {
 
                 homeView.addView(ll, lp);
                 createApp(ll, lp, item, position);
-                savePage();
+                savePage(currIndex);
 
                 slidingDrawer.animateClose();
                 slidingDrawer.bringToFront();
