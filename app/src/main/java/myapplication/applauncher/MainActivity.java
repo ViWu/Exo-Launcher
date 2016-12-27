@@ -603,9 +603,23 @@ public class MainActivity extends Activity {
             lp.topMargin = 0;
     }
 
+    //Update saved x,y coordinates for moved object
+    public void updateLocation(View v, RelativeLayout.LayoutParams lp){
+        for(int i=0;i < appShortcuts.size(); i++){
+            if((((ArrayList<String>)v.getTag()).get(1).equals(appShortcuts.get(i).label))){
+                appShortcuts.get(i).x = lp.leftMargin;
+                appShortcuts.get(i).y = lp.topMargin;
+                savePage(currIndex);
+            }
+        }
+    }
+
     private void setHomeListeners(final LinearLayout ll, final int position){
 
-        ll.setTag(apps.get(position).name);
+        ArrayList<String> tags= new ArrayList<>();
+        tags.add(apps.get(position).name);
+        tags.add(apps.get(position).label);
+        ll.setTag(tags);
 
         ll.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -641,6 +655,7 @@ public class MainActivity extends Activity {
                         removeAppButton.setVisibility(View.GONE);
 
                         deleteShortcut(ll, lp, true);
+                        updateLocation(v, lp);
 
                         if(clickDuration > MAX_CLICK_DURATION) {
                             //no click event
@@ -659,7 +674,7 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 PackageManager manager = getPackageManager();
 
-                Intent i = manager.getLaunchIntentForPackage(v.getTag().toString());
+                Intent i = manager.getLaunchIntentForPackage(((ArrayList<String>)v.getTag()).get(0).toString());
 
                 if (i != null) {
                     i.addCategory(Intent.CATEGORY_LAUNCHER);
