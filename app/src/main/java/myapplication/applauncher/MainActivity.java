@@ -282,7 +282,7 @@ public class MainActivity extends Activity {
         homeView.removeView(hostView);
     }
 
-    public static void createApp(LinearLayout ll, RelativeLayout.LayoutParams lp, View v, int pos){
+    public static Application createApp(LinearLayout ll, RelativeLayout.LayoutParams lp, View v, int pos){
         Application app = new Application();
         app.ll = ll;
         app.uid = appUid;
@@ -293,6 +293,7 @@ public class MainActivity extends Activity {
         app.drawerIndex = pos;
         appUid++;
         appShortcuts.add(app);
+        return app;
         //Log.d("STATE", "created " + app.label);
     }
 
@@ -372,7 +373,7 @@ public class MainActivity extends Activity {
                     lp.topMargin = Integer.parseInt(line);
                     app.y = Integer.parseInt(line);
                     appShortcuts.add(app);
-                    setHomeListeners(ll, app.drawerIndex);
+                    setHomeListeners(app.ll, app.uid, app.drawerIndex);
                     homeView.addView(ll, lp);
                     line = br.readLine();
                 }
@@ -604,9 +605,10 @@ public class MainActivity extends Activity {
     }
 
     //Update saved x,y coordinates for moved object
-    public void updateLocation(View v, RelativeLayout.LayoutParams lp){
+    public void updateLocation(View v, RelativeLayout.LayoutParams lp, int uid){
         for(int i=0;i < appShortcuts.size(); i++){
-            if((((ArrayList<String>)v.getTag()).get(1).equals(appShortcuts.get(i).label))){
+            if((((ArrayList<String>)v.getTag()).get(1).equals(appShortcuts.get(i).label))
+                    && appShortcuts.get(i).uid == uid){
                 appShortcuts.get(i).x = lp.leftMargin;
                 appShortcuts.get(i).y = lp.topMargin;
                 savePage(currIndex);
@@ -614,7 +616,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void setHomeListeners(final LinearLayout ll, final int position){
+    private void setHomeListeners(final LinearLayout ll, final int uid, final int position){
 
         ArrayList<String> tags= new ArrayList<>();
         tags.add(apps.get(position).name);
@@ -655,7 +657,7 @@ public class MainActivity extends Activity {
                         removeAppButton.setVisibility(View.GONE);
 
                         deleteShortcut(ll, lp, true);
-                        updateLocation(v, lp);
+                        updateLocation(v, lp, uid);
 
                         if(clickDuration > MAX_CLICK_DURATION) {
                             //no click event
@@ -709,10 +711,9 @@ public class MainActivity extends Activity {
                 ((ImageView)ll.findViewById(R.id.icon_image)).setImageDrawable(img.getDrawable());
                 ((TextView)ll.findViewById(R.id.icon_text)).setText(txt.getText());
 
-                setHomeListeners(ll, position);
-
                 homeView.addView(ll, lp);
-                createApp(ll, lp, item, position);
+                Application app = createApp(ll, lp, item, position);
+                setHomeListeners(app.ll, app.uid, position);
                 savePage(currIndex);
 
                 slidingDrawer.animateClose();
