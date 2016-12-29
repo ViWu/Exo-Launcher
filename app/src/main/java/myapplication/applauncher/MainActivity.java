@@ -354,7 +354,6 @@ public class MainActivity extends Activity {
                     //set uid
                     Log.d("STATE", "uid: " + line);
                     app.uid = Integer.parseInt(line);
-                    appUid++;
                     line = br.readLine();
 
                     //set drawer index
