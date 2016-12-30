@@ -58,6 +58,7 @@ public class MainActivity extends Activity {
     protected static ArrayList<Integer> widgets;
     protected static ArrayList<Application> appShortcuts;
     protected static ArrayList<LauncherAppWidgetHostView> widgetShortcuts;
+    protected static ArrayList<String> iconFiles;
     static boolean appLaunchable = true;
     private static final int MAX_CLICK_DURATION = 100;
     private static final int MIN_LONG_CLICK_DURATION = 1000;
@@ -83,6 +84,7 @@ public class MainActivity extends Activity {
         apps = new ArrayList<>();
         appShortcuts = new ArrayList<>();
         widgetShortcuts = new ArrayList<>();
+        iconFiles = new ArrayList<>();
 
         drawerGrid = (GridView) findViewById(R.id.content);
         slidingDrawer = (SlidingDrawer) findViewById(R.id.drawer);
@@ -104,6 +106,7 @@ public class MainActivity extends Activity {
         setDrawerListeners();
         setReceiver();
         setTabs();
+        cleanStorage();
         loadPage(1);
     }
 
@@ -333,48 +336,52 @@ public class MainActivity extends Activity {
             if (exists) {
                 FileReader in = new FileReader(dir + "/" + pg + ".txt");
                 BufferedReader br = new BufferedReader(in);
-                String line = null;
-                line = br.readLine();
+                String line = br.readLine();
 
                 while (line != null) {
                     //set label and icon
                     Log.d("STATE", "label: " + line);
-                    LayoutInflater li = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    LinearLayout ll = (LinearLayout) li.inflate(R.layout.drawer_item, null);
-                    ((TextView) ll.findViewById(R.id.icon_text)).setText(line);
                     Bitmap bitmap = loadIcon(line);
-                    ((ImageView) ll.findViewById(R.id.icon_image)).setImageBitmap(bitmap);
-                    Application app = new Application();
-                    app.ll = ll;
-                    app.label = line;
-                    app.icon = new BitmapDrawable(getResources(), bitmap);
-                    ;
-                    line = br.readLine();
+                    if (bitmap != null) {
+                        LayoutInflater li = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                        LinearLayout ll = (LinearLayout) li.inflate(R.layout.drawer_item, null);
+                        ((TextView) ll.findViewById(R.id.icon_text)).setText(line);
+                        ((ImageView) ll.findViewById(R.id.icon_image)).setImageBitmap(bitmap);
+                        Application app = new Application();
+                        app.ll = ll;
+                        app.label = line;
+                        app.icon = new BitmapDrawable(getResources(), bitmap);
+                        line = br.readLine();
 
-                    //set uid
-                    Log.d("STATE", "uid: " + line);
-                    app.uid = Integer.parseInt(line);
-                    line = br.readLine();
+                        //set uid
+                        Log.d("STATE", "uid: " + line);
+                        app.uid = Integer.parseInt(line);
+                        line = br.readLine();
 
-                    //set drawer index
-                    Log.d("STATE", "pos: " + line);
-                    app.drawerIndex = Integer.parseInt(line);
-                    line = br.readLine();
+                        //set drawer index
+                        Log.d("STATE", "pos: " + line);
+                        app.drawerIndex = Integer.parseInt(line);
+                        line = br.readLine();
 
-                    //set location
-                    Log.d("STATE", "X:" + line);
-                    RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(360, 368);
-                    lp.leftMargin = Integer.parseInt(line);
-                    app.x = Integer.parseInt(line);
-                    line = br.readLine();
+                        //set location
+                        Log.d("STATE", "X:" + line);
+                        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(360, 368);
+                        lp.leftMargin = Integer.parseInt(line);
+                        app.x = Integer.parseInt(line);
+                        line = br.readLine();
 
-                    Log.d("STATE", "Y: " + line);
-                    lp.topMargin = Integer.parseInt(line);
-                    app.y = Integer.parseInt(line);
-                    appShortcuts.add(app);
-                    setHomeListeners(app.ll, app.uid, app.drawerIndex);
-                    homeView.addView(ll, lp);
-                    line = br.readLine();
+                        Log.d("STATE", "Y: " + line);
+                        lp.topMargin = Integer.parseInt(line);
+                        app.y = Integer.parseInt(line);
+                        appShortcuts.add(app);
+                        setHomeListeners(app.ll, app.uid, app.drawerIndex);
+                        homeView.addView(ll, lp);
+                        line = br.readLine();
+                    }
+                    else{
+                        for(int i=0; i< 5; i++)
+                            line = br.readLine();
+                    }
                 }
                 in.close();
                 slidingDrawer.bringToFront();
@@ -498,16 +505,37 @@ public class MainActivity extends Activity {
 
         String PACKAGE_NAME = getApplicationContext().getPackageName();
         apps.clear();
+        iconFiles.clear();
 
         for (int i = 0; i < packages.size(); i++) {
             Application p = new Application();
             p.icon = packages.get(i).loadIcon(pm);
             p.name = packages.get(i).activityInfo.packageName;
             p.label = packages.get(i).loadLabel(pm).toString();
-            if(!(p.name.equals(PACKAGE_NAME)))
+            if(!(p.name.equals(PACKAGE_NAME))) {
+                iconFiles.add(p.label + ".png");
                 apps.add(p);
+                Log.d("STATE", "adding: " + p.label + ".png" );
+            }
         }
         Collections.sort(apps);
+    }
+
+    public void cleanStorage(){
+        File dir = getFilesDir();
+        File[] subFiles = dir.listFiles();
+        String fileName;
+
+        if (subFiles != null)
+        {
+            for (File file : subFiles)
+            {
+                fileName = file.getName();
+                Log.d("STATE", "clean: " +  fileName );
+                if(!iconFiles.contains(fileName) && fileName.contains(".png"))
+                    file.delete();
+            }
+        }
     }
 
     public static RelativeLayout.LayoutParams createLayoutParams(View v, int x, int y){
@@ -802,6 +830,12 @@ public class MainActivity extends Activity {
         removeWidgetButton.setVisibility(View.GONE);
     }
 
+    public void rebirth(){
+        Intent i = new Intent(this, MainActivity.class);
+        i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(i);
+    }
+
     public class Receiver extends BroadcastReceiver {
 
         @Override
@@ -810,6 +844,13 @@ public class MainActivity extends Activity {
             drawerAdapterObject = new DrawerAdapter(MainActivity.this, apps);
             drawerGrid.setAdapter(drawerAdapterObject);
             setDrawerListeners();
+            cleanStorage();
+            if(Intent.ACTION_PACKAGE_REMOVED.equals(intent.getAction()))
+                rebirth();
+            for (int i = 0; i < appShortcuts.size(); i++){
+                homeView.removeView(appShortcuts.get(i).ll);
+            }
+
         }
 
     }

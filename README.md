@@ -12,5 +12,5 @@ Target SDK Version: 23
 Screenshots
 ---------------------------------
 
-|<img src="https://github.com/ViWu/Exo-Launcher/blob/master/app/src/main/res/drawable/Screenshot1.png">  | <img src="https://github.com/ViWu/Exo-Launcher/blob/master/app/src/main/res/drawable/Screenshot2.png" > | <img src="https://github.com/ViWu/Exo-Launcher/blob/master/app/src/main/res/drawable/Screenshot3.png">
+|<img src="https://github.com/ViWu/Exo-Launcher/blob/master/app/src/main/res/drawable/screenshot1.png">  | <img src="https://github.com/ViWu/Exo-Launcher/blob/master/app/src/main/res/drawable/screenshot2.png" > | <img src="https://github.com/ViWu/Exo-Launcher/blob/master/app/src/main/res/drawable/screenshot3.png">
 |----------------|----------------|----------------|
