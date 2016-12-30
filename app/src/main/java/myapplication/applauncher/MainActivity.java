@@ -73,6 +73,7 @@ public class MainActivity extends Activity {
     static int widgetUid = 0;
     static File dir;
     static int currIndex = 1;
+    String uninstalledApp;
 
 
     @Override
@@ -532,8 +533,10 @@ public class MainActivity extends Activity {
             {
                 fileName = file.getName();
                 Log.d("STATE", "clean: " +  fileName );
-                if(!iconFiles.contains(fileName) && fileName.contains(".png"))
+                if(!iconFiles.contains(fileName) && fileName.contains(".png")) {
+                    uninstalledApp = fileName;
                     file.delete();
+                }
             }
         }
     }
@@ -845,14 +848,15 @@ public class MainActivity extends Activity {
             drawerGrid.setAdapter(drawerAdapterObject);
             setDrawerListeners();
             cleanStorage();
-            if(Intent.ACTION_PACKAGE_REMOVED.equals(intent.getAction()))
+            if(Intent.ACTION_PACKAGE_REMOVED.equals(intent.getAction())) {
                 rebirth();
+            }
             for (int i = 0; i < appShortcuts.size(); i++){
-                homeView.removeView(appShortcuts.get(i).ll);
+                if((appShortcuts.get(i).label+".png").equals(uninstalledApp))
+                    homeView.removeView(appShortcuts.get(i).ll);
             }
 
         }
-
     }
 
 }
