@@ -58,7 +58,7 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Apps"
+        android:text="Customize"
         android:id="@+id/apps"
         android:minWidth="280px"
         android:layout_alignParentTop="true"

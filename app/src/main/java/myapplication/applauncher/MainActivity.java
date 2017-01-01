@@ -8,6 +8,7 @@ import android.appwidget.AppWidgetProviderInfo;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
@@ -73,6 +74,7 @@ public class MainActivity extends Activity {
     static int widgetUid = 0;
     static File dir;
     static int currIndex = 1;
+    static int transition = 0;
     String uninstalledApp;
 
 
@@ -114,7 +116,7 @@ public class MainActivity extends Activity {
     @Override
     public void onBackPressed() {
         if (slidingDrawer.isOpened()) {
-            slidingDrawer.animateClose();
+            closeDrawer();
         } else {
             super.onBackPressed();
         }
@@ -159,10 +161,18 @@ public class MainActivity extends Activity {
         appShortcuts.clear();
         widgetShortcuts.clear();
         loadPage(index);
-        if(right)
-            slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideinright);
-        else
-            slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideinleft);
+        if(right) {
+            if(transition == 0)
+                slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideinright);
+            else
+                slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.spininright);
+        }
+        else {
+            if(transition == 0)
+                slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.slideinleft);
+            else
+                slide[0] = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.spininleft);
+        }
         for (int i = 0; i < appShortcuts.size(); i++){
             appShortcuts.get(i).ll.startAnimation(slide[0]);
         }
@@ -252,7 +262,7 @@ public class MainActivity extends Activity {
         widgetUid++;
 
         widgetShortcuts.add(hostView);
-        slidingDrawer.animateClose();
+        closeDrawer();
         homeView.addView(hostView);
         bringToBack(hostView);
 
@@ -461,9 +471,32 @@ public class MainActivity extends Activity {
         appTab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getPackages();
-                drawerAdapterObject = new DrawerAdapter(mContext, apps);
-                drawerGrid.setAdapter(drawerAdapterObject);
+
+                        AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
+
+                        String [] items = {"Slide", "Slide and Spin"};
+                        b.setTitle("Select Transition");
+                        b.setItems(items, new DialogInterface.OnClickListener() {
+
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                // TODO Auto-generated method stub
+                                switch(which){
+                                    case 0:
+                                        transition = 0;
+                                        closeDrawer();
+                                        break;
+
+                                    case 1:
+                                        transition = 1;
+                                        closeDrawer();
+                                        break;
+                                }
+                            }
+                        });
+                        AlertDialog d = b.create();
+                        d.show();
+
             }
         });
 
@@ -746,8 +779,7 @@ public class MainActivity extends Activity {
                 setHomeListeners(app.ll, app.uid, position);
                 savePage(currIndex);
 
-                slidingDrawer.animateClose();
-                slidingDrawer.bringToFront();
+                closeDrawer();
                 return true;
             }
         });
@@ -823,6 +855,11 @@ public class MainActivity extends Activity {
     public void enableTabs(Button appTab, Button widgetTab){
         appTab.setVisibility(View.VISIBLE);
         widgetTab.setVisibility(View.VISIBLE);
+    }
+
+    public void closeDrawer(){
+        slidingDrawer.animateClose();
+        slidingDrawer.bringToFront();
     }
 
     public void initTrashIcons(){
