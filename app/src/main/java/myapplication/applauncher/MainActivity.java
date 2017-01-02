@@ -1,5 +1,6 @@
 package myapplication.applauncher;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.appwidget.AppWidgetManager;
@@ -13,12 +14,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -34,6 +39,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -76,6 +82,8 @@ public class MainActivity extends Activity {
     static int currIndex = 1;
     static int transition = 0;
     String uninstalledApp;
+
+    private static final int REQUEST_LOAD_IMG = 600;
 
 
     @Override
@@ -205,6 +213,102 @@ public class MainActivity extends Activity {
     }
 
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case 1: {
+
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    Intent galleryIntent = new Intent(Intent.ACTION_PICK,
+                            android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                    startActivityForResult(galleryIntent, REQUEST_LOAD_IMG);
+
+
+                } else {
+                    Toast.makeText(MainActivity.this, "Permission denied to access external storage!", Toast.LENGTH_SHORT).show();
+                }
+                return;
+            }
+
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        try {
+            if (resultCode == RESULT_OK ) {
+                if (requestCode == R.id.REQUEST_PICK_APPWIDGET) {
+                    configureWidget(data);
+                }
+                else if (requestCode == REQUEST_CREATE_APPWIDGET) {
+                    createWidget(data);
+                }
+                else if (requestCode == REQUEST_LOAD_IMG){
+
+                    Uri selectedImage = data.getData();
+                    String[] filePathColumn = { MediaStore.Images.Media.DATA };
+
+
+                    Cursor cursor = getContentResolver().query(selectedImage,
+                            filePathColumn, null, null, null);
+
+                    cursor.moveToFirst();
+
+                    int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+                    String imgDecodableString = cursor.getString(columnIndex);
+                    cursor.close();
+
+                    BitmapDrawable img = new BitmapDrawable(BitmapFactory.decodeFile(imgDecodableString));
+                    homeView.setBackgroundDrawable(img);
+                    closeDrawer();
+                }
+                else {
+                    Toast.makeText(this, "No item selected!",
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+            else if (resultCode == RESULT_CANCELED && data != null) {
+                int appWidgetId = data.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1);
+                if (appWidgetId != -1) {
+                    mAppWidgetHost.deleteAppWidgetId(appWidgetId);
+                }
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "An unexpected error has occured...", Toast.LENGTH_LONG)
+                    .show();
+        }
+    }
+
+    public void transitionDialog(){
+        AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
+
+        String [] items = {"Slide", "Slide and Spin"};
+        b.setTitle("Select Transition");
+        b.setItems(items, new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // TODO Auto-generated method stub
+                switch(which){
+                    case 0:
+                        transition = 0;
+                        closeDrawer();
+                        break;
+
+                    case 1:
+                        transition = 1;
+                        closeDrawer();
+                        break;
+                }
+            }
+        });
+        AlertDialog d = b.create();
+        d.show();
+    }
+
+
     void selectWidget() {
         int appWidgetId = this.mAppWidgetHost.allocateAppWidgetId();
         Intent pickIntent = new Intent(AppWidgetManager.ACTION_APPWIDGET_PICK);
@@ -218,24 +322,6 @@ public class MainActivity extends Activity {
         pickIntent.putParcelableArrayListExtra(AppWidgetManager.EXTRA_CUSTOM_INFO, customInfo);
         ArrayList customExtras = new ArrayList();
         pickIntent.putParcelableArrayListExtra(AppWidgetManager.EXTRA_CUSTOM_EXTRAS, customExtras);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == RESULT_OK ) {
-            if (requestCode == R.id.REQUEST_PICK_APPWIDGET) {
-                configureWidget(data);
-            }
-            else if (requestCode == REQUEST_CREATE_APPWIDGET) {
-                createWidget(data);
-            }
-        }
-        else if (resultCode == RESULT_CANCELED && data != null) {
-            int appWidgetId = data.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1);
-            if (appWidgetId != -1) {
-                mAppWidgetHost.deleteAppWidgetId(appWidgetId);
-            }
-        }
     }
 
     private void configureWidget(Intent data) {
@@ -474,8 +560,8 @@ public class MainActivity extends Activity {
 
                         AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
 
-                        String [] items = {"Slide", "Slide and Spin"};
-                        b.setTitle("Select Transition");
+                        String [] items = {"Wallpapers", "Transitions"};
+                        b.setTitle("Customize");
                         b.setItems(items, new DialogInterface.OnClickListener() {
 
                             @Override
@@ -483,13 +569,14 @@ public class MainActivity extends Activity {
                                 // TODO Auto-generated method stub
                                 switch(which){
                                     case 0:
-                                        transition = 0;
-                                        closeDrawer();
+                                        // Required to ask user for permission to access user's external storage
+                                        ActivityCompat.requestPermissions(MainActivity.this,
+                                                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+
                                         break;
 
                                     case 1:
-                                        transition = 1;
-                                        closeDrawer();
+                                        transitionDialog();
                                         break;
                                 }
                             }
