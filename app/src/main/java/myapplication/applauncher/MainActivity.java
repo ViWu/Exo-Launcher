@@ -20,10 +20,12 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.res.ResourcesCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -308,6 +310,35 @@ public class MainActivity extends Activity {
         d.show();
     }
 
+    public void wallpaperDialog(){
+        AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
+
+        String [] items = {"Gallery", "Set to default"};
+        b.setTitle("Select from");
+        b.setItems(items, new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // TODO Auto-generated method stub
+                switch(which){
+                    case 0:
+                        // Required to ask user for permission to access user's external storage
+                        ActivityCompat.requestPermissions(MainActivity.this,
+                                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+                        break;
+
+                    case 1:
+                        Drawable defaultBackground = getResources().getDrawable(R.drawable.default_wallpaper);
+                        homeView.setBackgroundDrawable(defaultBackground);
+                        closeDrawer();
+                        break;
+                }
+            }
+        });
+        AlertDialog d = b.create();
+        d.show();
+    }
+
 
     void selectWidget() {
         int appWidgetId = this.mAppWidgetHost.allocateAppWidgetId();
@@ -569,10 +600,7 @@ public class MainActivity extends Activity {
                                 // TODO Auto-generated method stub
                                 switch(which){
                                     case 0:
-                                        // Required to ask user for permission to access user's external storage
-                                        ActivityCompat.requestPermissions(MainActivity.this,
-                                                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
-
+                                        wallpaperDialog();
                                         break;
 
                                     case 1:
