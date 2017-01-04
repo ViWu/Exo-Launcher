@@ -232,7 +232,6 @@ public class MainActivity extends Activity {
                 }
                 return;
             }
-
         }
     }
 
@@ -322,9 +321,22 @@ public class MainActivity extends Activity {
                 // TODO Auto-generated method stub
                 switch(which){
                     case 0:
-                        // Required to ask user for permission to access user's external storage
-                        ActivityCompat.requestPermissions(MainActivity.this,
+                        Context mContext = getApplicationContext();
+                        int check = mContext.getPackageManager().checkPermission(
+                                android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                mContext.getPackageName());
+
+                        if (check == PackageManager.PERMISSION_GRANTED) {
+                            Intent galleryIntent = new Intent(Intent.ACTION_PICK,
+                                    android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                            startActivityForResult(galleryIntent, REQUEST_LOAD_IMG);
+                        }
+
+                        else
+                            // Required to ask user for permission to access user's external storage
+                            ActivityCompat.requestPermissions(MainActivity.this,
                                 new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+
                         break;
 
                     case 1:
