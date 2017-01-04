@@ -74,6 +74,7 @@ public class MainActivity extends Activity {
     private long startClickTime, clickDuration;
     public static Vibrator vibration;
     static ImageView removeAppButton, removeWidgetButton;
+    TextView panelIndicator;
 
     AppWidgetManager mAppWidgetManager;
     static LauncherAppWidgetHost mAppWidgetHost;
@@ -102,6 +103,7 @@ public class MainActivity extends Activity {
         drawerGrid = (GridView) findViewById(R.id.content);
         slidingDrawer = (SlidingDrawer) findViewById(R.id.drawer);
         homeView = (RelativeLayout) findViewById(R.id.home_view);
+        panelIndicator = (TextView) findViewById(R.id.panelIndicator);
 
         getWidgetIDs();
         getPackages();
@@ -163,6 +165,8 @@ public class MainActivity extends Activity {
             widgetShortcuts.get(i).startAnimation(slide[0]);
         }
         currIndex = switchPage(currIndex, right);
+        String str = currIndex + "/3";
+        panelIndicator.setText(str);
     }
 
     //New page content slides into homeview
