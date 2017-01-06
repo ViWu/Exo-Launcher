@@ -87,6 +87,7 @@ public class MainActivity extends Activity {
     String uninstalledApp;
 
     private static final int REQUEST_LOAD_IMG = 600;
+    private static final int REQUEST_CROP_IMG = 500;
 
 
     @Override
@@ -253,21 +254,19 @@ public class MainActivity extends Activity {
                 else if (requestCode == REQUEST_LOAD_IMG){
 
                     Uri selectedImage = data.getData();
-                    String[] filePathColumn = { MediaStore.Images.Media.DATA };
 
+                    cropImage(selectedImage);
 
-                    Cursor cursor = getContentResolver().query(selectedImage,
-                            filePathColumn, null, null, null);
-
-                    cursor.moveToFirst();
-
-                    int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-                    String imgDecodableString = cursor.getString(columnIndex);
-                    cursor.close();
-
-                    BitmapDrawable img = new BitmapDrawable(BitmapFactory.decodeFile(imgDecodableString));
-                    homeView.setBackgroundDrawable(img);
-                    closeDrawer();
+                }
+                else if (requestCode == REQUEST_CROP_IMG) {
+                    if (data != null) {
+                        // get the returned data
+                        Bundle extras = data.getExtras();
+                        // get the cropped bitmap
+                        Bitmap selectedBitmap = extras.getParcelable("data");
+                        BitmapDrawable img = new BitmapDrawable(selectedBitmap);
+                        homeView.setBackgroundDrawable(img);
+                    }
                 }
                 else {
                     Toast.makeText(this, "No item selected!",
@@ -284,6 +283,15 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "An unexpected error has occured...", Toast.LENGTH_LONG)
                     .show();
         }
+    }
+
+    private void cropImage(Uri selectedImage) {
+        Intent cropIntent = new Intent("com.android.camera.action.CROP");
+        cropIntent.setDataAndType(selectedImage, "image/*");
+        cropIntent.putExtra("crop", true);
+        cropIntent.putExtra("return-data", true);
+        startActivityForResult(cropIntent, REQUEST_CROP_IMG);
+        closeDrawer();
     }
 
     public void transitionDialog(){
@@ -989,8 +997,10 @@ public class MainActivity extends Activity {
     }
 
     public void closeDrawer(){
-        slidingDrawer.animateClose();
-        slidingDrawer.bringToFront();
+        if (slidingDrawer.isOpened()) {
+            slidingDrawer.animateClose();
+            slidingDrawer.bringToFront();
+        }
     }
 
     public void initTrashIcons(){
