@@ -51,6 +51,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -265,7 +267,7 @@ public class MainActivity extends Activity {
                         // get the cropped bitmap
                         Bitmap selectedBitmap = extras.getParcelable("data");
                         BitmapDrawable img = new BitmapDrawable(selectedBitmap);
-                        homeView.setBackgroundDrawable(img);
+                        setWallpaper(img);
                     }
                 }
                 else {
@@ -353,14 +355,32 @@ public class MainActivity extends Activity {
 
                     case 1:
                         Drawable defaultBackground = getResources().getDrawable(R.drawable.default_wallpaper);
-                        homeView.setBackgroundDrawable(defaultBackground);
-                        closeDrawer();
+                        setWallpaper(defaultBackground);
                         break;
                 }
             }
         });
         AlertDialog d = b.create();
         d.show();
+    }
+
+    public void setWallpaper(Drawable drawableObj){
+        if (android.os.Build.VERSION.SDK_INT >= 16) {
+            Method setBackground = null;
+            try {
+                setBackground = View.class.getMethod("setBackground", Drawable.class);
+                setBackground.invoke(homeView, drawableObj);
+            } catch (NoSuchMethodException e) {
+                homeView.setBackgroundDrawable(drawableObj);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
+        }
+        else
+            homeView.setBackgroundDrawable(drawableObj);
+        closeDrawer();
     }
 
 
