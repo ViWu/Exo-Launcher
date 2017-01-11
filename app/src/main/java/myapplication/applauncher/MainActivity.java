@@ -25,6 +25,7 @@ import android.os.Bundle;
 import android.os.Vibrator;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.res.ResourcesCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -264,9 +265,10 @@ public class MainActivity extends Activity {
                     if (data != null) {
                         // get the returned data
                         Bundle extras = data.getExtras();
+                        Context mContext = getApplicationContext();
                         // get the cropped bitmap
                         Bitmap selectedBitmap = extras.getParcelable("data");
-                        BitmapDrawable img = new BitmapDrawable(selectedBitmap);
+                        BitmapDrawable img = new BitmapDrawable(mContext.getResources(), selectedBitmap);
                         setWallpaper(img);
                     }
                 }
@@ -354,7 +356,8 @@ public class MainActivity extends Activity {
                         break;
 
                     case 1:
-                        Drawable defaultBackground = getResources().getDrawable(R.drawable.default_wallpaper);
+                        mContext = getApplicationContext();
+                        Drawable defaultBackground = ContextCompat.getDrawable(mContext, R.drawable.default_wallpaper);
                         setWallpaper(defaultBackground);
                         break;
                 }
