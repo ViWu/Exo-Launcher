@@ -881,8 +881,10 @@ public class MainActivity extends Activity {
                         clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
                         removeAppButton.setVisibility(View.GONE);
 
-                        deleteShortcut(ll, lp, true);
-                        updateLocation(v, lp, uid);
+                        if(clickDuration > MIN_LONG_CLICK_DURATION + 75){
+                            deleteShortcut(ll, lp, true);
+                            updateLocation(v, lp, uid);
+                        }
 
                         if(clickDuration > MAX_CLICK_DURATION) {
                             //no click event
